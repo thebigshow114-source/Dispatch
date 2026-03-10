@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dispatch · Omega</title>
+
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#15333d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+
+    <style>
+        /* [Original CSS Styles from Source 1-654 remain unchanged] */
+        :root {
+            -[span_0](start_span)-ink: #1a2537;[span_0](end_span)
+            -[span_1](start_span)-navy: #15333d;[span_1](end_span)
+            -[span_2](start_span)-accent: #2563eb;[span_2](end_span)
+            -[span_3](start_span)-font: 'Plus Jakarta Sans', sans-serif;[span_3](end_span)
+        }
+        /* ... existing styles ... */
+    </style>
+
+
+    <script>
+        /* PWA Service Worker Registration */
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Dispatch PWA: Offline cache active'))
+                    .catch(err => console.log('PWA Setup Error:', err));
+            });
+        }
+    </script>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="top-nav-brand">
+            [span_4](start_span)<img src="data:image/png;base64,..." alt="Omega Kitchens" class="top-nav-logo-img">[span_4](end_span)
+            <div class="top-nav-divider"></div>
+            <div>
+                [span_5](start_span)<div class="top-nav-title">Dispatch</div>[span_5](end_span)
+                [span_6](start_span)<div class="top-nav-sub">Contracts Operations</div>[span_6](end_span)
+            </div>
+        </div>
+        </nav>
+
+
+    <script>
+        [span_7](start_span)let myTable, calendar;[span_7](end_span)
+        /* ... all original functions ... */
+    </script>
+</body>
+</html>
