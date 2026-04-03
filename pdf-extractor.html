@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Info Extractor · Dispatch</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f1923;
+            --surface: #162230;
+            --surface2: #1e2f40;
+            --border: #2a3f54;
+            --accent: #2563eb;
+            --accent-light: #3b82f6;
+            --text: #e2eaf4;
+            --text-muted: #6b8399;
+            --green: #22c55e;
+            --yellow: #f59e0b;
+            --red: #ef4444;
+            --font: 'Segoe UI', system-ui, sans-serif;
+            --mono: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        header .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        header .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        header h1 {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        header span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        main {
+            flex: 1;
+            padding: 28px;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 14px;
+            padding: 56px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--surface);
+            position: relative;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--accent);
+            background: #162230cc;
+        }
+
+        .drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .drop-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .drop-zone h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .drop-zone p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Status bar */
+        .status-bar {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+
+        .status-bar.visible { display: flex; }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results layout */
+        .results {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .results.visible { display: flex; }
+
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-header .badge {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2px 9px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text);
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        /* File info */
+        .file-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1px;
+            background: var(--border);
+        }
+
+        .meta-item {
+            background: var(--surface);
+            padding: 14px 18px;
+        }
+
+        .meta-item label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+        }
+
+        .meta-item value {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Extracted fields */
+        .fields-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1px;
+            background: var(--border);
+        }
+
+        .field-item {
+            background: var(--surface);
+            padding: 14px 18px;
+        }
+
+        .field-item label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 5px;
+        }
+
+        .field-item .values {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 3px 9px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: var(--mono);
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tag.green { border-color: #166534; background: #052e1644; color: var(--green); }
+        .tag.yellow { border-color: #854d0e; background: #2d1d0244; color: var(--yellow); }
+        .tag.blue { border-color: #1e40af; background: #0c1f5044; color: var(--accent-light); }
+
+        .empty-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Full text */
+        .text-area {
+            padding: 18px;
+        }
+
+        .text-content {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: var(--mono);
+            font-size: 12px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            color: #b8cfe2;
+        }
+
+        .text-content::-webkit-scrollbar { width: 6px; }
+        .text-content::-webkit-scrollbar-track { background: transparent; }
+        .text-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* Copy button */
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            color: var(--text);
+            font-size: 12px;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover { border-color: var(--accent); color: var(--accent-light); }
+
+        /* New file button */
+        .reset-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            color: var(--text-muted);
+            font-size: 13px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-top: 8px;
+        }
+
+        .reset-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+        /* Page nav */
+        .page-nav {
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .page-btn {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 6px;
+            padding: 4px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.15s;
+        }
+
+        .page-btn:hover:not(:disabled) { border-color: var(--accent); }
+        .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        #pageLabel { min-width: 80px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">
+        <div class="brand-icon">📄</div>
+        <div>
+            <h1>PDF Info Extractor</h1>
+            <span>Dispatch · Contracts Operations</span>
+        </div>
+    </div>
+</header>
+
+<main>
+    <!-- Drop Zone -->
+    <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".pdf" />
+        <span class="drop-icon">📂</span>
+        <h2>Drop a PDF here</h2>
+        <p>or click to browse · PDF files only</p>
+    </div>
+
+    <!-- Processing status -->
+    <div class="status-bar" id="statusBar">
+        <div class="spinner"></div>
+        <span id="statusText">Processing…</span>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+
+        <button class="reset-btn" id="resetBtn">↩ Load another PDF</button>
+
+        <!-- File metadata -->
+        <div class="section" id="metaSection">
+            <div class="section-header">📋 File Info</div>
+            <div class="file-meta" id="fileMeta"></div>
+        </div>
+
+        <!-- Extracted data fields -->
+        <div class="section" id="dataSection">
+            <div class="section-header">
+                🔍 Extracted Information
+                <span class="badge" id="fieldCount">0 fields</span>
+            </div>
+            <div class="fields-grid" id="fieldsGrid"></div>
+        </div>
+
+        <!-- Full text per page -->
+        <div class="section" id="textSection">
+            <div class="section-header">📝 Full Text</div>
+            <div class="text-area">
+                <div class="text-content" id="textContent"></div>
+                <button class="copy-btn" id="copyBtn">⎘ Copy text</button>
+            </div>
+            <div class="page-nav">
+                <button class="page-btn" id="prevPage" disabled>← Prev</button>
+                <span id="pageLabel">Page 1 / 1</span>
+                <button class="page-btn" id="nextPage" disabled>Next →</button>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+    // PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let pages = [];      // array of extracted text strings per page
+    let currentPage = 0;
+
+    // ── Elements ──────────────────────────────────────────────────────────────
+    const dropZone    = document.getElementById('dropZone');
+    const fileInput   = document.getElementById('fileInput');
+    const statusBar   = document.getElementById('statusBar');
+    const statusText  = document.getElementById('statusText');
+    const results     = document.getElementById('results');
+    const fileMeta    = document.getElementById('fileMeta');
+    const fieldsGrid  = document.getElementById('fieldsGrid');
+    const fieldCount  = document.getElementById('fieldCount');
+    const textContent = document.getElementById('textContent');
+    const prevPage    = document.getElementById('prevPage');
+    const nextPage    = document.getElementById('nextPage');
+    const pageLabel   = document.getElementById('pageLabel');
+    const copyBtn     = document.getElementById('copyBtn');
+    const resetBtn    = document.getElementById('resetBtn');
+
+    // ── Drag & Drop ───────────────────────────────────────────────────────────
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type === 'application/pdf') processPDF(file);
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files[0]) processPDF(fileInput.files[0]);
+    });
+
+    resetBtn.addEventListener('click', () => {
+        results.classList.remove('visible');
+        dropZone.style.display = '';
+        statusBar.classList.remove('visible');
+        fileInput.value = '';
+        pages = [];
+    });
+
+    // ── Pagination ─────────────────────────────────────────────────────────────
+    prevPage.addEventListener('click', () => { if (currentPage > 0) showPage(currentPage - 1); });
+    nextPage.addEventListener('click', () => { if (currentPage < pages.length - 1) showPage(currentPage + 1); });
+
+    function showPage(idx) {
+        currentPage = idx;
+        textContent.textContent = pages[idx] || '(no text on this page)';
+        pageLabel.textContent = `Page ${idx + 1} / ${pages.length}`;
+        prevPage.disabled = idx === 0;
+        nextPage.disabled = idx === pages.length - 1;
+    }
+
+    // ── Copy ──────────────────────────────────────────────────────────────────
+    copyBtn.addEventListener('click', () => {
+        const all = pages.join('\n\n--- Page break ---\n\n');
+        navigator.clipboard.writeText(all).then(() => {
+            copyBtn.textContent = '✓ Copied!';
+            setTimeout(() => { copyBtn.textContent = '⎘ Copy text'; }, 1800);
+        });
+    });
+
+    // ── Main processor ────────────────────────────────────────────────────────
+    async function processPDF(file) {
+        dropZone.style.display = 'none';
+        results.classList.remove('visible');
+        statusBar.classList.add('visible');
+        statusText.textContent = 'Loading PDF…';
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+            // Extract text per page
+            pages = [];
+            for (let i = 1; i <= pdf.numPages; i++) {
+                statusText.textContent = `Extracting page ${i} of ${pdf.numPages}…`;
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                const str = content.items.map(item => item.str).join(' ');
+                pages.push(str);
+            }
+
+            const fullText = pages.join('\n');
+            const meta = await pdf.getMetadata().catch(() => ({}));
+
+            // Render
+            renderFileMeta(file, pdf.numPages, meta);
+            renderExtractedFields(fullText);
+            showPage(0);
+
+            statusBar.classList.remove('visible');
+            results.classList.add('visible');
+
+        } catch (err) {
+            statusText.textContent = '⚠ Error: ' + (err.message || 'Could not parse PDF');
+        }
+    }
+
+    // ── File metadata panel ───────────────────────────────────────────────────
+    function renderFileMeta(file, numPages, meta) {
+        const info = meta.info || {};
+        const items = [
+            ['File Name',    file.name],
+            ['File Size',    formatBytes(file.size)],
+            ['Pages',        numPages],
+            ['Title',        info.Title        || '—'],
+            ['Author',       info.Author       || '—'],
+            ['Creator',      info.Creator      || '—'],
+            ['Producer',     info.Producer     || '—'],
+            ['Created',      formatPDFDate(info.CreationDate)],
+            ['Modified',     formatPDFDate(info.ModDate)],
+        ];
+        fileMeta.innerHTML = items.map(([label, val]) =>
+            `<div class="meta-item"><label>${label}</label><value>${val}</value></div>`
+        ).join('');
+    }
+
+    // ── Extracted fields ──────────────────────────────────────────────────────
+    function renderExtractedFields(text) {
+        const fields = [
+            { label: 'Dates',           tags: extractDates(text),    color: 'yellow' },
+            { label: 'Currency Amounts',tags: extractAmounts(text),  color: 'green'  },
+            { label: 'Email Addresses', tags: extractEmails(text),   color: 'blue'   },
+            { label: 'Phone Numbers',   tags: extractPhones(text),   color: ''       },
+            { label: 'Contract / PO #', tags: extractContractNums(text), color: 'blue' },
+            { label: 'ABN / ACN',       tags: extractABN(text),      color: ''       },
+            { label: 'URLs',            tags: extractURLs(text),     color: 'blue'   },
+            { label: 'Addresses',       tags: extractAddresses(text),color: ''       },
+        ];
+
+        let filled = 0;
+        fieldsGrid.innerHTML = fields.map(f => {
+            if (f.tags.length) filled++;
+            const tagsHtml = f.tags.length
+                ? f.tags.map(t => `<span class="tag ${f.color}" title="${t}">${t}</span>`).join('')
+                : `<span class="empty-hint">None detected</span>`;
+            return `<div class="field-item"><label>${f.label}</label><div class="values">${tagsHtml}</div></div>`;
+        }).join('');
+
+        fieldCount.textContent = `${filled} of ${fields.length} populated`;
+    }
+
+    // ── Extraction helpers ────────────────────────────────────────────────────
+
+    function unique(arr) { return [...new Set(arr)]; }
+
+    function extractDates(text) {
+        const patterns = [
+            /\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})\b/g,
+            /\b(\d{1,2})\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{4})\b/gi,
+            /\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2}),?\s+(\d{4})\b/gi,
+        ];
+        const found = [];
+        patterns.forEach(p => { let m; while ((m = p.exec(text)) !== null) found.push(m[0]); });
+        return unique(found).slice(0, 15);
+    }
+
+    function extractAmounts(text) {
+        const pattern = /(\$|AUD|USD|EUR|GBP)\s?[\d,]+(?:\.\d{2})?|\b[\d,]+(?:\.\d{2})?\s?(dollars?|cents?)/gi;
+        const found = [];
+        let m;
+        while ((m = pattern.exec(text)) !== null) found.push(m[0].trim());
+        return unique(found).slice(0, 12);
+    }
+
+    function extractEmails(text) {
+        const pattern = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+        return unique(text.match(pattern) || []).slice(0, 10);
+    }
+
+    function extractPhones(text) {
+        const pattern = /(?:\+?61|0)[\s\-]?(?:\d[\s\-]?){8,9}\d|\(?\d{2,4}\)?[\s\-]?\d{3,4}[\s\-]?\d{4}/g;
+        const found = (text.match(pattern) || []).map(s => s.trim());
+        return unique(found).slice(0, 8);
+    }
+
+    function extractContractNums(text) {
+        const pattern = /(?:PO|Order|Contract|Job|Ref|Invoice|Inv|#|No\.?)\s*[:\-]?\s*([A-Z0-9\-\/]{4,20})/gi;
+        const found = [];
+        let m;
+        while ((m = pattern.exec(text)) !== null) found.push(m[0].trim());
+        return unique(found).slice(0, 10);
+    }
+
+    function extractABN(text) {
+        // ABN: 11 digits in xx xxx xxx xxx format
+        const pattern = /\b\d{2}\s?\d{3}\s?\d{3}\s?\d{3}\b/g;
+        return unique(text.match(pattern) || []).slice(0, 5);
+    }
+
+    function extractURLs(text) {
+        const pattern = /https?:\/\/[^\s"'<>()]+/g;
+        return unique(text.match(pattern) || []).slice(0, 8);
+    }
+
+    function extractAddresses(text) {
+        // Heuristic: lines matching street-number + street name + suburb/state/postcode
+        const pattern = /\d+\s+[A-Z][a-zA-Z\s]+(?:Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Lane|Ln|Court|Ct|Place|Pl|Way|Boulevard|Blvd)[,\s]+[A-Za-z\s]+(?:NSW|VIC|QLD|SA|WA|TAS|ACT|NT)?\s*\d{4}/g;
+        return unique(text.match(pattern) || []).slice(0, 5);
+    }
+
+    // ── Formatting helpers ─────────────────────────────────────────────────────
+    function formatBytes(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(2) + ' MB';
+    }
+
+    function formatPDFDate(str) {
+        if (!str) return '—';
+        // PDF date: D:YYYYMMDDHHmmSSOHH'mm
+        const m = str.match(/D:(\d{4})(\d{2})(\d{2})/);
+        if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+        return str;
+    }
+</script>
+
+</body>
+</html>
