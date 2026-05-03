@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Extractor</title>
+<!--
+  SRI: generate integrity hashes with:
+    curl -sL https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js \
+      | openssl dgst -sha384 -binary | openssl base64 -A
+  Then add integrity="sha384-<output>" crossorigin="anonymous" to the script tag.
+  Do the same for pdf.worker.min.js and add the hash to the workerSrc assignment below.
+-->
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self' cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; worker-src blob: cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'none'">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0e0e0e;
+  --surface:   #161616;
+  --border:    #2a2a2a;
+  --amber:     #e8a631;
+  --amber-dim: #7a5518;
+  --cream:     #f0ead6;
+  --muted:     #555;
+  --green:     #4caf7d;
+  --red:       #e05252;
+  --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --serif:     Georgia, 'Times New Roman', serif;
+  --mono:      'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, Menlo, monospace;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--cream);
+  font-family: var(--sans);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+#app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 48px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+}
+header h1 {
+  font-family: var(--serif);
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 900;
+  color: var(--cream);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+header h1 span { color: var(--amber); }
+.badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--amber);
+  border: 1px solid var(--amber-dim);
+  padding: 3px 8px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+/* ── DROP ZONE ── */
+#drop-zone {
+  border: 1.5px dashed var(--border);
+  border-radius: 4px;
+  padding: 56px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  position: relative;
+  background: var(--surface);
+}
+#drop-zone:hover, #drop-zone.drag-over {
+  border-color: var(--amber);
+  background: #1c1810;
+}
+#file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.drop-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  opacity: .6;
+}
+#drop-zone h2 {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--cream);
+  margin-bottom: 6px;
+}
+#drop-zone p {
+  font-size: 13px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+#drop-zone p span {
+  color: var(--amber);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── PROGRESS ── */
+#progress-wrap { display: none; margin-top: 24px; }
+#progress-wrap.active { display: block; }
+.progress-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+#prog-pct { color: var(--amber); }
+.progress-bar-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--amber);
+  width: 0%;
+  transition: width .25s;
+  border-radius: 99px;
+}
+body.scanning .progress-bar-fill {
+  background: linear-gradient(90deg, var(--amber) 30%, #f5d080 50%, var(--amber) 70%);
+  background-size: 400% auto;
+  animation: shimmer 2s linear infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: -400% center; }
+  100% { background-position:  400% center; }
+}
+#phase-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .5px;
+  min-height: 16px;
+  margin-top: 6px;
+}
+#time-est {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--amber-dim);
+  min-height: 14px;
+}
+#stall-warning {
+  display: none;
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: #1a1400;
+  border: 1px solid var(--amber-dim);
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+#stall-warning.active { display: block; }
+#btn-cancel {
+  display: none;
+  margin-top: 12px;
+}
+body.scanning #btn-cancel { display: inline-flex; }
+
+/* ── META PANEL ── */
+#meta-panel {
+  display: none;
+  margin-top: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+#meta-panel.active { display: block; }
+.meta-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: #111;
+}
+.meta-header-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--amber);
+}
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+.meta-item {
+  padding: 12px 18px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.meta-key {
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.meta-val {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--cream);
+  word-break: break-all;
+}
+.meta-val.hi { color: var(--amber); font-weight: 500; }
+
+/* ── STATS BAR ── */
+#stats-bar {
+  display: none;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 18px;
+  background: #0e0e0e;
+  border: 1px solid var(--border);
+  border-top: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+#stats-bar.active { display: flex; }
+.stat-val { color: var(--cream); font-weight: 500; }
+
+/* ── ACTION BAR ── */
+#action-bar { display: none; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+#action-bar.active { display: flex; }
+
+/* ── BUTTONS ── */
+.btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--cream);
+  padding: 9px 18px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--amber); color: var(--amber); background: #1c1810; }
+.btn.primary { border-color: var(--amber); color: var(--amber); background: #1c1810; }
+.btn.primary:hover { background: #2a2010; }
+.btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+.btn.danger:hover { border-color: var(--red); color: var(--red); background: #1a0e0e; }
+#btn-clear { margin-left: auto; }
+
+/* ── OUTPUT ── */
+#output-wrap { display: none; margin-top: 24px; }
+#output-wrap.active { display: block; }
+.output-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #111;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+.output-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); opacity: .7; }
+#search-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--cream);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 2px;
+  width: 200px;
+  outline: none;
+  transition: border-color .2s;
+}
+#search-box:focus { border-color: var(--amber); }
+#search-box::placeholder { color: var(--muted); }
+#match-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--amber-dim);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.font-controls { display: flex; align-items: center; gap: 5px; }
+.font-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all .15s;
+  line-height: 1.7;
+}
+.font-btn:hover { border-color: var(--amber); color: var(--amber); }
+#font-sz-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  min-width: 26px;
+  text-align: center;
+}
+#output-text {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0 0 4px 4px;
+  padding: 24px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.9;
+  color: #ccc;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 620px;
+  overflow-y: auto;
+  resize: vertical;
+}
+#output-text::-webkit-scrollbar { width: 6px; }
+#output-text::-webkit-scrollbar-track { background: var(--bg); }
+#output-text::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+#output-text::-webkit-scrollbar-thumb:hover { background: var(--amber-dim); }
+.page-sep {
+  color: var(--amber-dim);
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 4px;
+  white-space: nowrap;
+}
+.page-sep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+mark { background: var(--amber); color: #000; border-radius: 2px; padding: 0 2px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  color: var(--cream);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 12px 18px;
+  border-radius: 3px;
+  transform: translateY(20px);
+  opacity: 0;
+  transition: all .25s;
+  pointer-events: none;
+  z-index: 999;
+  max-width: 340px;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.error { border-left-color: var(--red); }
+
+/* ── OVERLAYS ── */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.overlay.active { display: flex; }
+.dialog {
+  background: var(--surface);
+  border: 1px solid var(--amber-dim);
+  border-radius: 4px;
+  padding: 32px;
+  width: 360px;
+  max-width: 92vw;
+}
+.dialog-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--amber);
+  margin-bottom: 8px;
+}
+.dialog-body {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  line-height: 1.7;
+}
+.dialog-row { display: flex; gap: 8px; }
+
+/* ── EXPORT SHEET ── */
+#export-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  z-index: 150;
+  align-items: flex-end;
+  justify-content: center;
+}
+#export-overlay.open { display: flex; }
+#export-sheet {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  padding: 20px 24px 32px;
+  width: 100%;
+  max-width: 520px;
+  transform: translateY(100%);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+#export-overlay.open #export-sheet { transform: translateY(0); }
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 99px;
+  margin: 0 auto 20px;
+}
+.sheet-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--cream);
+  margin-bottom: 20px;
+}
+.sheet-lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.sheet-section { margin-bottom: 18px; }
+.fmt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fmt-opt {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 12px 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color .15s, background .15s;
+}
+.fmt-opt:hover { border-color: var(--amber-dim); }
+.fmt-opt.sel { border-color: var(--amber); background: #1c1810; }
+.fmt-opt input { display: none; }
+.fmt-name { font-family: var(--mono); font-size: 12px; color: var(--cream); display: block; margin-bottom: 3px; }
+.fmt-ext  { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.range-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.range-opt {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  font-family: var(--mono); font-size: 12px; color: var(--cream);
+}
+.range-opt input { accent-color: var(--amber); cursor: pointer; }
+#range-custom {
+  display: none; align-items: center; gap: 8px; margin-top: 10px;
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+}
+#range-custom.active { display: flex; }
+.range-num {
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--cream); font-family: var(--mono); font-size: 12px;
+  padding: 5px 8px; border-radius: 2px; width: 64px; outline: none;
+}
+.range-num:focus { border-color: var(--amber); }
+.sheet-footer { display: flex; gap: 10px; }
+
+@media (max-width: 480px) {
+  #app { padding: 24px 16px 60px; }
+  #search-box { width: 140px; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1>PDF <span>Extractor</span></h1>
+    <span class="badge">v2.0</span>
+  </header>
+
+  <div id="drop-zone" role="button" tabindex="0" aria-label="Upload PDF — press Enter or Space to browse">
+    <input type="file" id="file-input" accept=".pdf">
+    <svg class="drop-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="8" y="4" width="26" height="34" rx="2" stroke="#e8a631" stroke-width="1.5"/>
+      <path d="M30 4v10h10" stroke="#e8a631" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M34 4l6 10" stroke="#e8a631" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M14 20h14M14 26h10M14 32h8" stroke="#7a5518" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="36" cy="36" r="10" fill="#161616" stroke="#e8a631" stroke-width="1.5"/>
+      <path d="M36 31v10M31 36h10" stroke="#e8a631" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <h2>Drop your PDF here</h2>
+    <p>or <span>browse to upload</span> — extracts all text, metadata &amp; structure</p>
+  </div>
+
+  <div id="progress-wrap">
+    <div class="progress-label">
+      <span id="prog-label">Reading file…</span>
+      <span id="prog-pct">0%</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="prog-fill"></div>
+    </div>
+    <div id="phase-label"></div>
+    <div id="time-est"></div>
+    <div id="stall-warning">Taking longer than usual — large or complex PDFs can cause delays.</div>
+    <button class="btn danger" id="btn-cancel">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l10 10M13 3L3 13"/></svg>
+      Cancel
+    </button>
+  </div>
+
+  <div id="meta-panel">
+    <div class="meta-header"><span class="meta-header-title">Document Metadata</span></div>
+    <div class="meta-grid" id="meta-grid"></div>
+  </div>
+
+  <div id="stats-bar">
+    <span>📄 <span class="stat-val" id="stat-pages">—</span> pages</span>
+    <span>🔤 <span class="stat-val" id="stat-words">—</span> words</span>
+    <span>📊 <span class="stat-val" id="stat-chars">—</span> characters</span>
+    <span>📝 <span class="stat-val" id="stat-lines">—</span> lines</span>
+  </div>
+
+  <div id="action-bar">
+    <button class="btn primary" id="btn-copy">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="10" rx="1"/><path d="M2 11V2h9"/></svg>
+      Copy Text
+    </button>
+    <button class="btn" id="btn-dl-txt">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v9M4 8l4 4 4-4"/><path d="M2 13h12"/></svg>
+      Download .txt
+    </button>
+    <button class="btn" id="btn-dl-json">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 3c-1 0-2 1-2 2v1c0 1-1 1-1 2s1 1 1 2v1c0 1 1 2 2 2M12 3c1 0 2 1 2 2v1c0 1 1 1 1 2s-1 1-1 2v1c0 1-1 2-2 2"/></svg>
+      Export JSON
+    </button>
+    <button class="btn" id="btn-export-opts">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h5"/></svg>
+      Options
+    </button>
+    <button class="btn danger" id="btn-clear">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l10 10M13 3L3 13"/></svg>
+      Clear
+    </button>
+  </div>
+
+  <div id="output-wrap">
+    <div class="output-toolbar">
+      <div class="output-toolbar-left">
+        <span class="dot"></span>
+        <span>Extracted Text</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="font-controls">
+          <button class="font-btn" id="btn-font-dn" aria-label="Decrease font size">A−</button>
+          <span id="font-sz-val">13</span>
+          <button class="font-btn" id="btn-font-up" aria-label="Increase font size">A+</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="match-count"></span>
+          <input type="search" id="search-box" placeholder="Search extracted text…" aria-label="Search extracted text">
+        </div>
+      </div>
+    </div>
+    <div id="output-text" role="region" aria-label="Extracted PDF text" tabindex="0"></div>
+  </div>
+</div>
+
+<!-- EXPORT SHEET -->
+<div id="export-overlay" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div id="export-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-title">Export Options</div>
+
+    <div class="sheet-section">
+      <div class="sheet-lbl">Format</div>
+      <div class="fmt-grid">
+        <label class="fmt-opt sel" id="fmt-txt">
+          <input type="radio" name="exp-fmt" value="txt" checked>
+          <span class="fmt-name">Plain Text</span><span class="fmt-ext">.txt</span>
+        </label>
+        <label class="fmt-opt" id="fmt-md">
+          <input type="radio" name="exp-fmt" value="md">
+          <span class="fmt-name">Markdown</span><span class="fmt-ext">.md</span>
+        </label>
+        <label class="fmt-opt" id="fmt-json">
+          <input type="radio" name="exp-fmt" value="json">
+          <span class="fmt-name">JSON</span><span class="fmt-ext">.json</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-lbl">Page Range</div>
+      <div class="range-row">
+        <label class="range-opt"><input type="radio" name="exp-range" value="all" checked> All pages</label>
+        <label class="range-opt"><input type="radio" name="exp-range" value="custom"> Custom range</label>
+      </div>
+      <div id="range-custom">
+        <span>Pages</span>
+        <input type="number" class="range-num" id="range-from" min="1" value="1">
+        <span>to</span>
+        <input type="number" class="range-num" id="range-to"   min="1" value="1">
+      </div>
+    </div>
+
+    <div class="sheet-footer">
+      <button class="btn primary" id="btn-sheet-export" style="flex:1">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v9M4 8l4 4 4-4"/><path d="M2 13h12"/></svg>
+        Export
+      </button>
+      <button class="btn" id="btn-sheet-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PASSWORD OVERLAY -->
+<div class="overlay" id="pw-overlay" role="dialog" aria-modal="true" aria-labelledby="pw-title">
+  <div class="dialog">
+    <div class="dialog-title" id="pw-title">Password Protected</div>
+    <div class="dialog-body">This PDF is encrypted. Enter the password to unlock it.</div>
+    <input id="pw-input" type="password" placeholder="Password…" autocomplete="current-password"
+      style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--cream);font-family:var(--mono);font-size:13px;padding:9px 12px;border-radius:2px;outline:none;margin-bottom:12px;">
+    <div class="dialog-row">
+      <button class="btn primary" id="pw-submit" style="flex:1">Unlock</button>
+      <button class="btn" id="pw-cancel">Cancel</button>
+    </div>
+    <div id="pw-error" style="font-family:var(--mono);font-size:11px;color:var(--red);margin-top:10px;display:none;">
+      Incorrect password — try again.
+    </div>
+  </div>
+</div>
+
+<!-- SCANNED DOC OVERLAY -->
+<div class="overlay" id="scan-overlay" role="dialog" aria-modal="true" aria-labelledby="scan-title">
+  <div class="dialog">
+    <div class="dialog-title" id="scan-title">Scanned Document Detected</div>
+    <div class="dialog-body">
+      The first few pages contain no extractable text. This looks like an image-only (scanned) PDF.<br><br>
+      You can continue — any pages <em>with</em> a text layer will be extracted — but most may come back empty.
+      For best results, run the document through an OCR tool first.
+    </div>
+    <div class="dialog-row">
+      <button class="btn" id="scan-continue" style="flex:1">Try anyway</button>
+      <button class="btn danger" id="scan-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ── State ──────────────────────────────────────────────────────────────
+let extractedPages  = [];
+let rawMeta         = {};
+let currentFile     = '';
+let isProcessing    = false;
+let cancelRequested = false;
+let currentTask     = null;
+let pendingBuffer   = null;
+let pendingFile     = null;
+let unlocking       = false;
+let fontSz          = 13;
+
+// ── Elements ───────────────────────────────────────────────────────────
+const dropZone     = document.getElementById('drop-zone');
+const fileInput    = document.getElementById('file-input');
+const progressWrap = document.getElementById('progress-wrap');
+const progFill     = document.getElementById('prog-fill');
+const progLabel    = document.getElementById('prog-label');
+const progPct      = document.getElementById('prog-pct');
+const phaseLabel   = document.getElementById('phase-label');
+const timeEst      = document.getElementById('time-est');
+const stallWarn    = document.getElementById('stall-warning');
+const metaPanel    = document.getElementById('meta-panel');
+const metaGrid     = document.getElementById('meta-grid');
+const statsBar     = document.getElementById('stats-bar');
+const actionBar    = document.getElementById('action-bar');
+const outputWrap   = document.getElementById('output-wrap');
+const outputText   = document.getElementById('output-text');
+const searchBox    = document.getElementById('search-box');
+const matchCount   = document.getElementById('match-count');
+const toast        = document.getElementById('toast');
+const pwOverlay    = document.getElementById('pw-overlay');
+const pwInput      = document.getElementById('pw-input');
+const pwError      = document.getElementById('pw-error');
+const pwSubmit     = document.getElementById('pw-submit');
+const scanOverlay  = document.getElementById('scan-overlay');
+const exportOverlay= document.getElementById('export-overlay');
+const exportSheet  = document.getElementById('export-sheet');
+
+// ── Utility ────────────────────────────────────────────────────────────
+function sanitise(str) {
+  if (str === null || str === undefined) return '';
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(str)));
+  return d.innerHTML;
+}
+
+function highlight(raw, query) {
+  if (!query || !raw) return sanitise(raw);
+  const lc = raw.toLowerCase();
+  const ql = query.toLowerCase();
+  let out = '', pos = 0, idx;
+  while ((idx = lc.indexOf(ql, pos)) !== -1) {
+    out += sanitise(raw.slice(pos, idx));
+    out += '<mark>' + sanitise(raw.slice(idx, idx + query.length)) + '</mark>';
+    pos = idx + query.length;
+  }
+  return out + sanitise(raw.slice(pos));
+}
+
+function fmtBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1048576).toFixed(1) + ' MB';
+}
+
+function fmtDuration(ms) {
+  if (ms < 60000) return Math.ceil(ms / 1000) + 's';
+  return Math.ceil(ms / 60000) + ' min';
+}
+
+let toastTimer;
+function showToast(msg, isErr) {
+  toast.textContent = msg;
+  toast.className   = 'toast show' + (isErr ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), isErr ? 5000 : 3000);
+}
+
+function setProgress(pct, label) {
+  progFill.style.width  = pct + '%';
+  progPct.textContent   = pct + '%';
+  progLabel.textContent = label;
+}
+
+function setPhase(txt) { phaseLabel.textContent = txt; }
+
+function reset() {
+  extractedPages = []; rawMeta = {}; currentFile = '';
+  cancelRequested = false; currentTask = null;
+  metaPanel.classList.remove('active');
+  statsBar.classList.remove('active');
+  actionBar.classList.remove('active');
+  outputWrap.classList.remove('active');
+  outputText.innerHTML = '';
+  metaGrid.innerHTML   = '';
+  searchBox.value      = '';
+  matchCount.textContent = '';
+  progressWrap.classList.remove('active');
+  setProgress(0, '');
+  setPhase('');
+  timeEst.textContent = '';
+  stallWarn.classList.remove('active');
+  document.title = 'PDF Extractor';
+}
+
+// ── Drag & Drop ────────────────────────────────────────────────────────
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type === 'application/pdf') processFile(f);
+  else showToast('Only PDF files are supported.', true);
+});
+dropZone.addEventListener('click',   () => fileInput.click());
+dropZone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) processFile(fileInput.files[0]); });
+
+// ── Password overlay ───────────────────────────────────────────────────
+pwSubmit.addEventListener('click', attemptUnlock);
+pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') attemptUnlock(); });
+document.getElementById('pw-cancel').addEventListener('click', () => {
+  pwOverlay.classList.remove('active');
+  pendingBuffer = null; pendingFile = null; unlocking = false;
+  document.body.classList.remove('scanning');
+  progressWrap.classList.remove('active');
+  isProcessing = false;
+});
+pwOverlay.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { document.getElementById('pw-cancel').click(); return; }
+  if (e.key !== 'Tab') return;
+  const els = [pwInput, pwSubmit, document.getElementById('pw-cancel')];
+  if (e.shiftKey) { if (document.activeElement === els[0]) { e.preventDefault(); els[els.length-1].focus(); } }
+  else            { if (document.activeElement === els[els.length-1]) { e.preventDefault(); els[0].focus(); } }
+});
+
+async function attemptUnlock() {
+  if (!pendingBuffer || !pendingFile || unlocking) return;
+  unlocking = true;
+  pwError.style.display = 'none';
+  pwSubmit.disabled = true;
+  try {
+    const pdf = await pdfjsLib.getDocument({ data: pendingBuffer, password: pwInput.value }).promise;
+    pwOverlay.classList.remove('active');
+    pwInput.value = '';
+    const f = pendingFile;
+    pendingBuffer = null; pendingFile = null;
+    await extractAndRender(pdf, f);
+  } catch (err) {
+    if (err?.name === 'PasswordException') {
+      pwError.style.display = 'block';
+      pwInput.select();
+    } else {
+      pendingBuffer = null; pendingFile = null;
+      pwOverlay.classList.remove('active');
+      showToast('Could not unlock — the file may be corrupted.', true);
+      document.body.classList.remove('scanning');
+      progressWrap.classList.remove('active');
+      isProcessing = false;
+    }
+  } finally {
+    unlocking = false;
+    pwSubmit.disabled = false;
+  }
+}
+
+// ── Main processor ─────────────────────────────────────────────────────
+async function processFile(file) {
+  if (isProcessing) { showToast('Already processing — please wait or cancel.', true); return; }
+  isProcessing = true;
+  currentFile = file.name.replace(/\.pdf$/i, '');
+  reset();
+  document.body.classList.add('scanning');
+  progressWrap.classList.add('active');
+  setProgress(0, 'Reading file…');
+  setPhase('Loading into memory…');
+
+  if (file.size > 100 * 1024 * 1024) {
+    showToast(`Large file (${fmtBytes(file.size)}) — processing may be slow.`, true);
+  }
+
+  let arrayBuffer;
+  try {
+    arrayBuffer = await file.arrayBuffer();
+  } catch {
+    showToast('Could not read this file — it may be locked or in use.', true);
+    document.body.classList.remove('scanning');
+    progressWrap.classList.remove('active');
+    isProcessing = false;
+    return;
+  }
+
+  setPhase('Parsing PDF structure…');
+
+  let pdf;
+  try {
+    currentTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    pdf = await currentTask.promise;
+    currentTask = null;
+  } catch (err) {
+    currentTask = null;
+    if (cancelRequested) { handleCancel(); return; }
+    if (err?.name === 'PasswordException') {
+      pendingBuffer = arrayBuffer;
+      pendingFile   = file;
+      pwError.style.display = 'none';
+      pwInput.value = '';
+      pwOverlay.classList.add('active');
+      setTimeout(() => pwInput.focus(), 50);
+      return;
+    }
+    showToast('Could not open this PDF — the file may be corrupted.', true);
+    progressWrap.classList.remove('active');
+    document.body.classList.remove('scanning');
+    isProcessing = false;
+    return;
+  }
+
+  await extractAndRender(pdf, file);
+}
+
+async function extractAndRender(pdf, file) {
+  setPhase('Reading metadata…');
+  try {
+    rawMeta = await pdf.getMetadata();
+    renderMeta(rawMeta, file, pdf.numPages);
+  } catch { /* silent */ }
+
+  if (cancelRequested) { handleCancel(); return; }
+
+  // Scanned PDF pre-flight: sample first 3 pages
+  setPhase('Checking document type…');
+  const sampleCount = Math.min(3, pdf.numPages);
+  let sampleItems = 0;
+  try {
+    for (let s = 1; s <= sampleCount; s++) {
+      const pg = await pdf.getPage(s);
+      const tc = await pg.getTextContent();
+      sampleItems += tc.items.filter(it => typeof it.str === 'string' && it.str.trim()).length;
+    }
+  } catch { /* proceed */ }
+
+  if (sampleItems < 10) {
+    const proceed = await confirmScanned();
+    if (!proceed) { handleCancel(); return; }
+  }
+
+  // Page-by-page extraction
+  setPhase('Extracting text…');
+  extractedPages = [];
+  const extractStart = Date.now();
+  let stallTimer;
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    if (cancelRequested) break;
+    clearTimeout(stallTimer);
+    stallWarn.classList.remove('active');
+    stallTimer = setTimeout(() => stallWarn.classList.add('active'), 15000);
+
+    setProgress(Math.round((i / pdf.numPages) * 100), `Page ${i} of ${pdf.numPages}…`);
+
+    if (i >= 3 && timeEst) {
+      const elapsed = Date.now() - extractStart;
+      const rem = (elapsed / i) * (pdf.numPages - i);
+      timeEst.textContent = rem > 4000 ? `About ${fmtDuration(rem)} remaining` : '';
+    }
+
+    try {
+      const page = await pdf.getPage(i);
+      const tc   = await page.getTextContent();
+      const items = tc.items;
+
+      // Dynamic line-break threshold from median Y-gap
+      const ys = items.map(it => it.transform?.[5] ?? null).filter(y => y !== null);
+      let thresh = 4;
+      if (ys.length > 1) {
+        const gaps = [];
+        for (let j = 1; j < ys.length; j++) {
+          const g = Math.abs(ys[j] - ys[j-1]);
+          if (g > 0) gaps.push(g);
+        }
+        if (gaps.length) {
+          gaps.sort((a, b) => a - b);
+          thresh = Math.max(gaps[Math.floor(gaps.length / 2)] * 0.6, 1);
+        }
+      }
+
+      const lines = [];
+      let lastY = null, cur = '';
+      for (const item of items) {
+        const y = item.transform?.[5] ?? null;
+        if (lastY !== null && y !== null && Math.abs(y - lastY) > thresh) {
+          if (cur.trim()) lines.push(cur.trimEnd());
+          cur = '';
+        }
+        cur += (item.str ?? '').slice(0, 10000);
+        lastY = y;
+      }
+      if (cur.trim()) lines.push(cur.trimEnd());
+      extractedPages.push({ page: i, lines, empty: lines.length === 0 });
+    } catch {
+      extractedPages.push({ page: i, lines: [], empty: true, error: true });
+    }
+  }
+
+  clearTimeout(stallTimer);
+  stallWarn.classList.remove('active');
+  timeEst.textContent = '';
+  setPhase('');
+
+  if (cancelRequested) { handleCancel(); return; }
+
+  document.body.classList.remove('scanning');
+  setProgress(100, 'Done');
+  setTimeout(() => progressWrap.classList.remove('active'), 600);
+
+  const allEmpty = extractedPages.every(p => p.empty);
+  renderOutput();
+  renderStats(pdf.numPages, allEmpty);
+  metaPanel.classList.add('active');
+  statsBar.classList.add('active');
+  actionBar.classList.add('active');
+  outputWrap.classList.add('active');
+  document.title = currentFile + ' — PDF Extractor';
+  isProcessing = false;
+
+  if (allEmpty) {
+    showToast('No text found — this looks like a scanned document. Try an OCR tool first.', true);
+  } else {
+    showToast(`Extracted ${pdf.numPages} page${pdf.numPages !== 1 ? 's' : ''} successfully.`);
+  }
+}
+
+function handleCancel() {
+  if (currentTask) { try { currentTask.destroy(); } catch { /* ignore */ } currentTask = null; }
+  document.body.classList.remove('scanning');
+  progressWrap.classList.remove('active');
+  setProgress(0, '');
+  setPhase('');
+  timeEst.textContent = '';
+  stallWarn.classList.remove('active');
+  cancelRequested = false;
+  isProcessing = false;
+  showToast('Processing cancelled.');
+}
+
+document.getElementById('btn-cancel').addEventListener('click', () => {
+  cancelRequested = true;
+  if (currentTask) { try { currentTask.destroy(); } catch { /* ignore */ } }
+});
+
+// ── Scanned PDF confirmation ───────────────────────────────────────────
+function confirmScanned() {
+  return new Promise(resolve => {
+    scanOverlay.classList.add('active');
+    const onContinue = () => { cleanup(); resolve(true); };
+    const onCancel   = () => { cleanup(); resolve(false); };
+    function cleanup() {
+      scanOverlay.classList.remove('active');
+      document.getElementById('scan-continue').removeEventListener('click', onContinue);
+      document.getElementById('scan-cancel').removeEventListener('click', onCancel);
+    }
+    document.getElementById('scan-continue').addEventListener('click', onContinue);
+    document.getElementById('scan-cancel').addEventListener('click', onCancel);
+  });
+}
+
+// ── Render metadata ────────────────────────────────────────────────────
+function renderMeta(meta, file, numPages) {
+  const info = meta?.info || {};
+  const fields = [
+    ['File',     file.name],
+    ['Size',     fmtBytes(file.size)],
+    ['Pages',    numPages],
+    ['Title',    info.Title],
+    ['Author',   info.Author],
+    ['Subject',  info.Subject],
+    ['Creator',  info.Creator],
+    ['Producer', info.Producer],
+    ['Created',  info.CreationDate],
+    ['Modified', info.ModDate],
+  ].filter(([, v]) => v != null && v !== '');
+
+  metaGrid.innerHTML = fields.map(([k, v]) => `
+    <div class="meta-item">
+      <div class="meta-key">${sanitise(k)}</div>
+      <div class="meta-val">${sanitise(v)}</div>
+    </div>`).join('');
+}
+
+// ── Render stats ───────────────────────────────────────────────────────
+function renderStats(numPages) {
+  const allText = extractedPages.flatMap(p => p.lines).join('\n');
+  const words   = allText.trim().split(/\s+/).filter(Boolean).length;
+  const chars   = allText.length;
+  const lines   = extractedPages.reduce((n, p) => n + p.lines.length, 0);
+  document.getElementById('stat-pages').textContent = numPages.toLocaleString();
+  document.getElementById('stat-words').textContent = words.toLocaleString();
+  document.getElementById('stat-chars').textContent = chars.toLocaleString();
+  document.getElementById('stat-lines').textContent = lines.toLocaleString();
+}
+
+// ── Render output ──────────────────────────────────────────────────────
+function renderOutput() {
+  const query = searchBox.value.trim();
+  let html = '';
+  let totalMatches = 0;
+
+  extractedPages.forEach(pg => {
+    if (pg.empty) return;
+    const sepText = `Page ${pg.page}`;
+    html += `<div class="page-sep">${sanitise(sepText)}</div>`;
+
+    pg.lines.forEach(line => {
+      if (query) {
+        const count = (line.toLowerCase().match(new RegExp(
+          query.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'
+        )) || []).length;
+        totalMatches += count;
+        html += highlight(line, query) + '\n';
+      } else {
+        html += sanitise(line) + '\n';
+      }
+    });
+  });
+
+  outputText.innerHTML = html;
+  matchCount.textContent = query && totalMatches > 0
+    ? `${totalMatches} match${totalMatches !== 1 ? 'es' : ''}`
+    : query ? 'No matches' : '';
+}
+
+// ── Search ─────────────────────────────────────────────────────────────
+let searchDebounce;
+searchBox.addEventListener('input', () => {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(renderOutput, 160);
+});
+
+// ── Font size ──────────────────────────────────────────────────────────
+function applyFontSz() {
+  outputText.style.fontSize = fontSz + 'px';
+  document.getElementById('font-sz-val').textContent = fontSz;
+}
+document.getElementById('btn-font-up').addEventListener('click', () => { if (fontSz < 24) { fontSz++; applyFontSz(); } });
+document.getElementById('btn-font-dn').addEventListener('click', () => { if (fontSz > 9)  { fontSz--; applyFontSz(); } });
+
+// ── Copy ───────────────────────────────────────────────────────────────
+document.getElementById('btn-copy').addEventListener('click', async () => {
+  const text = pagesText(1, extractedPages.length);
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Copied to clipboard.');
+  } catch {
+    showToast('Could not access clipboard — try selecting the text manually.', true);
+  }
+});
+
+// ── Text assembly ──────────────────────────────────────────────────────
+function pagesText(from, to) {
+  return extractedPages
+    .filter(p => p.page >= from && p.page <= to && !p.empty)
+    .map(p => `--- Page ${p.page} ---\n${p.lines.join('\n')}`)
+    .join('\n\n');
+}
+
+function buildMarkdown(from, to) {
+  const info = rawMeta?.info || {};
+  let md = '';
+  if (info.Title)  md += `# ${info.Title}\n`;
+  if (info.Author) md += `**Author:** ${info.Author}\n\n`;
+  extractedPages
+    .filter(p => p.page >= from && p.page <= to && !p.empty)
+    .forEach(p => { md += `\n## Page ${p.page}\n\n${p.lines.join('\n')}\n`; });
+  return md;
+}
+
+function buildJson(from, to) {
+  const info = rawMeta?.info || {};
+  return JSON.stringify({
+    file: currentFile,
+    metadata: {
+      title:    info.Title    || null,
+      author:   info.Author   || null,
+      subject:  info.Subject  || null,
+      creator:  info.Creator  || null,
+      producer: info.Producer || null,
+      created:  info.CreationDate || null,
+      modified: info.ModDate  || null,
+    },
+    totalPages: extractedPages.length,
+    pages: extractedPages
+      .filter(p => p.page >= from && p.page <= to)
+      .map(p => ({ page: p.page, empty: p.empty, lines: p.lines })),
+  }, null, 2);
+}
+
+function download(content, filename, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+
+document.getElementById('btn-dl-txt').addEventListener('click', () => {
+  download(pagesText(1, extractedPages.length), currentFile + '.txt', 'text/plain');
+});
+
+document.getElementById('btn-dl-json').addEventListener('click', () => {
+  download(buildJson(1, extractedPages.length), currentFile + '.json', 'application/json');
+});
+
+// ── Export options sheet ───────────────────────────────────────────────
+document.getElementById('btn-export-opts').addEventListener('click', () => {
+  const maxPage = extractedPages.length;
+  document.getElementById('range-from').max = maxPage;
+  document.getElementById('range-to').max   = maxPage;
+  document.getElementById('range-to').value = maxPage;
+  exportOverlay.classList.add('open');
+});
+
+document.getElementById('btn-sheet-cancel').addEventListener('click', () => exportOverlay.classList.remove('open'));
+exportOverlay.addEventListener('click', e => { if (e.target === exportOverlay) exportOverlay.classList.remove('open'); });
+
+// Format selection highlight
+document.querySelectorAll('.fmt-opt input').forEach(radio => {
+  radio.addEventListener('change', () => {
+    document.querySelectorAll('.fmt-opt').forEach(o => o.classList.remove('sel'));
+    radio.closest('.fmt-opt').classList.add('sel');
+  });
+});
+
+// Range toggle
+document.querySelectorAll('input[name="exp-range"]').forEach(r => {
+  r.addEventListener('change', () => {
+    const custom = document.getElementById('range-custom');
+    custom.classList.toggle('active', r.value === 'custom' && r.checked);
+  });
+});
+
+document.getElementById('btn-sheet-export').addEventListener('click', () => {
+  const fmt   = document.querySelector('input[name="exp-fmt"]:checked').value;
+  const range = document.querySelector('input[name="exp-range"]:checked').value;
+  const total = extractedPages.length;
+  let from = 1, to = total;
+  if (range === 'custom') {
+    from = Math.max(1, parseInt(document.getElementById('range-from').value) || 1);
+    to   = Math.min(total, parseInt(document.getElementById('range-to').value) || total);
+    if (from > to) { showToast('Invalid page range.', true); return; }
+  }
+  const base = currentFile + (from !== 1 || to !== total ? `_p${from}-${to}` : '');
+  if (fmt === 'txt')  download(pagesText(from, to),    base + '.txt',  'text/plain');
+  if (fmt === 'md')   download(buildMarkdown(from, to), base + '.md',   'text/markdown');
+  if (fmt === 'json') download(buildJson(from, to),     base + '.json', 'application/json');
+  exportOverlay.classList.remove('open');
+});
+
+// ── Clear ──────────────────────────────────────────────────────────────
+document.getElementById('btn-clear').addEventListener('click', () => {
+  reset();
+  fileInput.value = '';
+});
+</script>
+</body>
+</html>
