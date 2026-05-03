@@ -12,7 +12,7 @@
   Do the same for pdf.worker.min.js and add the hash to the workerSrc assignment below.
 -->
 <meta http-equiv="Content-Security-Policy"
-  content="default-src 'self'; script-src 'self' cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; worker-src blob: cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'none'">
+  content="default-src 'self'; script-src 'self' 'unsafe-inline' cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; worker-src blob: cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'none'">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -894,8 +894,8 @@ async function attemptUnlock() {
 async function processFile(file) {
   if (isProcessing) { showToast('Already processing — please wait or cancel.', true); return; }
   isProcessing = true;
-  currentFile = file.name.replace(/\.pdf$/i, '');
   reset();
+  currentFile = file.name.replace(/\.pdf$/i, '');
   document.body.classList.add('scanning');
   progressWrap.classList.add('active');
   setProgress(0, 'Reading file…');
