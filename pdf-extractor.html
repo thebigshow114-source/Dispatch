@@ -719,6 +719,16 @@ mark { background: var(--amber); color: #000; border-radius: 2px; padding: 0 2px
 
 <script>
 'use strict';
+
+if (typeof pdfjsLib === 'undefined') {
+  window.addEventListener('load', () => {
+    document.getElementById('drop-zone').querySelector('h2').textContent = 'Library failed to load';
+    document.getElementById('drop-zone').querySelector('p').textContent =
+      'An internet connection is required to load PDF.js. Reload once connected.';
+  });
+  throw new Error('pdfjsLib not loaded');
+}
+
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -838,7 +848,7 @@ dropZone.addEventListener('drop', e => {
   if (f && f.type === 'application/pdf') processFile(f);
   else showToast('Only PDF files are supported.', true);
 });
-dropZone.addEventListener('click',   () => fileInput.click());
+dropZone.addEventListener('click', e => { if (e.target !== fileInput) fileInput.click(); });
 dropZone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
 fileInput.addEventListener('change', () => { if (fileInput.files[0]) processFile(fileInput.files[0]); });
 
