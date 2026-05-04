@@ -80,34 +80,34 @@
             padding: 5px 12px;
             cursor: pointer;
             transition: all 0.15s;
-            display: none;
         }
         .nav-back:hover { border-color: var(--accent); color: var(--text); }
-        .nav-back.visible { display: block; }
 
         /* ── Main layout ────────────────────────────────── */
-        .main { padding: 36px 24px; max-width: 1440px; margin: 0 auto; }
+        .main { padding: 24px 16px; max-width: 1440px; margin: 0 auto; }
 
         /* ── Upload ─────────────────────────────────────── */
-        #upload-section { max-width: 640px; margin: 80px auto 0; }
+        #upload-section { max-width: 560px; margin: 24px auto 0; }
 
         .upload-zone {
-            border: 2px dashed var(--border);
-            border-radius: 20px;
-            padding: 72px 40px;
+            border: 2px solid #2563eb;
+            border-radius: 16px;
+            padding: 52px 28px;
             text-align: center;
             cursor: pointer;
             transition: border-color 0.2s, background 0.2s;
-            background: var(--surface);
+            background: #1e2f3f;
+            box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
         }
         .upload-zone:hover,
         .upload-zone.drag-over {
-            border-color: var(--accent);
-            background: rgba(37,99,235,0.06);
+            border-color: #60a5fa;
+            background: #243548;
+            box-shadow: 0 0 0 6px rgba(37,99,235,0.2);
         }
-        .upload-icon  { font-size: 52px; margin-bottom: 20px; line-height: 1; }
-        .upload-title { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
-        .upload-sub   { color: var(--muted); font-size: 14px; margin-bottom: 28px; max-width: 360px; margin-left: auto; margin-right: auto; }
+        .upload-icon  { font-size: 48px; margin-bottom: 16px; line-height: 1; }
+        .upload-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; color: #ffffff; }
+        .upload-sub   { color: #9ab3c8; font-size: 14px; margin-bottom: 24px; max-width: 340px; margin-left: auto; margin-right: auto; }
         .upload-btn {
             background: var(--accent);
             color: #fff;
@@ -426,7 +426,7 @@
     </div>
     <div class="nav-div"></div>
     <span class="nav-pill">Remedials Tracker</span>
-    <button class="nav-back" id="nav-back" onclick="resetToUpload()">← New file</button>
+    <button class="nav-back" id="nav-back" style="display:none" onclick="resetToUpload()">← New file</button>
 </nav>
 
 <!-- ── Main ────────────────────────────────────────────── -->
@@ -602,7 +602,7 @@ function handleFile(file) {
                 buildGroupFilter(allData);
                 resetFilters(true);
                 setView('dashboard');
-                document.getElementById('nav-back').classList.add('visible');
+                document.getElementById('nav-back').style.display = 'block';
             } catch (err) {
                 alert('Could not process this file.\n\n' + err.message);
                 setView('upload');
@@ -915,7 +915,7 @@ function setView(v) {
 
 function resetToUpload() {
     setView('upload');
-    document.getElementById('nav-back').classList.remove('visible');
+    document.getElementById('nav-back').style.display = 'none';
     input.value = '';
     allData = [];
     if (dtInstance) { dtInstance.destroy(); dtInstance = null; }
