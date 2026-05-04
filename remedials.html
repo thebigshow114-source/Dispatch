@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remedials Tracker · Dispatch</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ink:        #1a2537;
+            --navy:       #15333d;
+            --bg:         #0f1c28;
+            --surface:    #162333;
+            --card:       #1e2f3f;
+            --border:     #2a3f50;
+            --accent:     #2563eb;
+            --accent-h:   #3b82f6;
+            --text:       #e2e8f0;
+            --muted:      #7f9bae;
+            --green:      #10b981;
+            --amber:      #f59e0b;
+            --red:        #ef4444;
+            --purple:     #8b5cf6;
+            --teal:       #14b8a6;
+            --font:       'Plus Jakarta Sans', sans-serif;
+            --mono:       'JetBrains Mono', monospace;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* ── Nav ───────────────────────────────────────── */
+        .nav {
+            background: var(--ink);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .nav-title  { font-weight: 700; font-size: 15px; color: #fff; }
+        .nav-sub    { font-size: 11px; color: var(--muted); }
+        .nav-div    { width: 1px; height: 24px; background: var(--border); }
+        .nav-pill {
+            background: rgba(37,99,235,0.2);
+            border: 1px solid rgba(37,99,235,0.4);
+            color: #60a5fa;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .nav-back {
+            margin-left: auto;
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--muted);
+            font-family: var(--font);
+            font-size: 12px;
+            padding: 5px 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: none;
+        }
+        .nav-back:hover { border-color: var(--accent); color: var(--text); }
+        .nav-back.visible { display: block; }
+
+        /* ── Main layout ────────────────────────────────── */
+        .main { padding: 36px 24px; max-width: 1440px; margin: 0 auto; }
+
+        /* ── Upload ─────────────────────────────────────── */
+        #upload-section { max-width: 640px; margin: 80px auto 0; }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 20px;
+            padding: 72px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            background: var(--surface);
+        }
+        .upload-zone:hover,
+        .upload-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(37,99,235,0.06);
+        }
+        .upload-icon  { font-size: 52px; margin-bottom: 20px; line-height: 1; }
+        .upload-title { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+        .upload-sub   { color: var(--muted); font-size: 14px; margin-bottom: 28px; max-width: 360px; margin-left: auto; margin-right: auto; }
+        .upload-btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 11px 28px;
+            border-radius: 8px;
+            font-family: var(--font);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .upload-btn:hover { background: var(--accent-h); }
+        #file-input { display: none; }
+
+        .upload-hint {
+            margin-top: 20px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .upload-hint code {
+            font-family: var(--mono);
+            background: var(--card);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+
+        /* ── Processing ─────────────────────────────────── */
+        #processing-section {
+            display: none;
+            text-align: center;
+            padding: 120px 24px;
+        }
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .processing-label { color: var(--muted); font-size: 14px; }
+
+        /* ── Dashboard ──────────────────────────────────── */
+        #dashboard { display: none; }
+
+        .dash-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .dash-title { font-size: 20px; font-weight: 800; }
+        .dash-sub   { font-size: 13px; color: var(--muted); margin-top: 2px; }
+        .file-chip {
+            margin-left: auto;
+            flex-shrink: 0;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: 12px;
+            color: var(--muted);
+            font-family: var(--mono);
+            align-self: center;
+        }
+
+        /* ── Metric cards ───────────────────────────────── */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 1100px) { .metrics { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 680px)  { .metrics { grid-template-columns: repeat(2, 1fr); } }
+
+        .mc {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 16px 14px;
+            position: relative;
+            overflow: hidden;
+            cursor: default;
+            transition: border-color 0.15s;
+        }
+        .mc[data-filter]:hover { border-color: rgba(255,255,255,0.2); cursor: pointer; }
+        .mc::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 12px 12px 0 0;
+        }
+        .mc.blue::after   { background: var(--accent); }
+        .mc.green::after  { background: var(--green); }
+        .mc.amber::after  { background: var(--amber); }
+        .mc.purple::after { background: var(--purple); }
+        .mc.red::after    { background: var(--red); }
+        .mc.teal::after   { background: var(--teal); }
+
+        .mc-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+        .mc-value { font-size: 30px; font-weight: 800; line-height: 1; margin-bottom: 5px; }
+        .mc.blue .mc-value   { color: #60a5fa; }
+        .mc.green .mc-value  { color: #34d399; }
+        .mc.amber .mc-value  { color: #fbbf24; }
+        .mc.purple .mc-value { color: #a78bfa; }
+        .mc.red .mc-value    { color: #f87171; }
+        .mc.teal .mc-value   { color: #2dd4bf; }
+        .mc-sub { font-size: 11px; color: var(--muted); }
+
+        /* ── Filter bar ─────────────────────────────────── */
+        .filters {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .fl { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+
+        select.fs {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 13px;
+            padding: 6px 10px;
+            cursor: pointer;
+            outline: none;
+        }
+        select.fs:focus { border-color: var(--accent); }
+
+        .fdiv { width: 1px; height: 20px; background: var(--border); margin: 0 2px; }
+
+        .fb {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--muted);
+            font-family: var(--font);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .fb.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .fb:not(.on):hover { border-color: var(--accent-h); color: var(--text); }
+
+        .f-count { font-size: 12px; color: var(--muted); margin-left: auto; white-space: nowrap; }
+
+        .f-reset {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-family: var(--font);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0 4px;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .f-reset:hover { color: var(--text); }
+
+        /* ── Table card ─────────────────────────────────── */
+        .table-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        /* DataTables overrides */
+        .dataTables_wrapper { padding: 16px; color: var(--text); }
+
+        .dataTables_filter input {
+            background: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 6px !important;
+            color: var(--text) !important;
+            font-family: var(--font) !important;
+            font-size: 13px !important;
+            padding: 6px 10px !important;
+            outline: none !important;
+            margin-left: 6px !important;
+        }
+        .dataTables_filter input:focus { border-color: var(--accent) !important; }
+        .dataTables_length select {
+            background: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 6px !important;
+            color: var(--text) !important;
+            font-family: var(--font) !important;
+            padding: 4px 8px !important;
+        }
+        .dataTables_info,
+        .dataTables_length label,
+        .dataTables_filter label { color: var(--muted) !important; font-size: 12px !important; }
+
+        table.dataTable {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            margin: 8px 0 !important;
+        }
+        table.dataTable thead th {
+            background: var(--surface) !important;
+            color: var(--muted) !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.06em !important;
+            border-bottom: 1px solid var(--border) !important;
+            border-top: none !important;
+            padding: 10px 12px !important;
+            white-space: nowrap;
+        }
+        table.dataTable thead th.sorting:hover,
+        table.dataTable thead th.sorting_asc,
+        table.dataTable thead th.sorting_desc { color: var(--text) !important; }
+        table.dataTable thead .sorting::after,
+        table.dataTable thead .sorting_asc::after,
+        table.dataTable thead .sorting_desc::after { opacity: 0.5; }
+
+        table.dataTable tbody tr {
+            background: transparent !important;
+            border-bottom: 1px solid var(--border) !important;
+            transition: background 0.1s;
+        }
+        table.dataTable tbody tr:last-child { border-bottom: none !important; }
+        table.dataTable tbody tr:hover { background: rgba(255,255,255,0.025) !important; }
+        table.dataTable tbody td {
+            padding: 10px 12px !important;
+            color: var(--text) !important;
+            vertical-align: middle !important;
+            border-top: none !important;
+        }
+
+        .dataTables_paginate .paginate_button {
+            background: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 6px !important;
+            color: var(--muted) !important;
+            padding: 4px 10px !important;
+            margin: 2px !important;
+            font-size: 12px !important;
+            transition: all 0.15s;
+        }
+        .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) {
+            background: var(--card) !important;
+            border-color: var(--accent) !important;
+            color: var(--text) !important;
+        }
+        .dataTables_paginate .paginate_button.current {
+            background: var(--accent) !important;
+            border-color: var(--accent) !important;
+            color: #fff !important;
+        }
+        .dataTables_paginate .paginate_button.disabled { opacity: 0.35 !important; }
+
+        /* ── Cell styles ────────────────────────────────── */
+        .mono { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .b-noRem   { background: rgba(127,155,174,0.12); color: var(--muted); }
+        .b-onTime  { background: rgba(16,185,129,0.15); color: #34d399; }
+        .b-late    { background: rgba(239,68,68,0.15); color: #f87171; }
+        .b-problem { background: rgba(239,68,68,0.25); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+        .b-unknown { background: rgba(127,155,174,0.08); color: var(--muted); font-style: italic; }
+
+        .days-val { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+        .days-late { color: #f87171; }
+        .days-ok   { color: #34d399; }
+        .days-zero { color: var(--amber); }
+        .days-na   { color: var(--muted); }
+
+        .rem-count {
+            display: inline-block;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-family: var(--mono);
+            font-weight: 500;
+        }
+        .rem-count.multi { border-color: rgba(139,92,246,0.4); color: #a78bfa; }
+        .rem-count.zero  { color: var(--muted); opacity: 0.6; }
+    </style>
+</head>
+<body>
+
+<!-- ── Navigation ──────────────────────────────────────── -->
+<nav class="nav">
+    <div>
+        <div class="nav-title">Dispatch</div>
+        <div class="nav-sub">Contracts Operations · Omega Kitchens</div>
+    </div>
+    <div class="nav-div"></div>
+    <span class="nav-pill">Remedials Tracker</span>
+    <button class="nav-back" id="nav-back" onclick="resetToUpload()">← New file</button>
+</nav>
+
+<!-- ── Main ────────────────────────────────────────────── -->
+<main class="main">
+
+    <!-- Upload -->
+    <div id="upload-section">
+        <div class="upload-zone" id="upload-zone">
+            <div class="upload-icon">📊</div>
+            <div class="upload-title">Drop your RAFT export here</div>
+            <div class="upload-sub">
+                ZCD kitchens and ZCR remedials are matched automatically on Purchase Order number
+            </div>
+            <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+                Choose File
+            </button>
+            <input type="file" id="file-input" accept=".xlsx,.xls">
+        </div>
+        <div class="upload-hint">
+            Expects columns: <code>SaTy</code>, <code>Sales Doc.</code>, <code>Created On</code>,
+            <code>Req.dlv.dt</code>, <code>Purchase order no.</code>, <code>Name 1</code>,
+            <code>Sales Group</code>, <code>Contracts Room Type</code>
+        </div>
+    </div>
+
+    <!-- Processing -->
+    <div id="processing-section">
+        <div class="spinner"></div>
+        <div class="processing-label" id="processing-label">Reading file…</div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard">
+
+        <div class="dash-header">
+            <div>
+                <div class="dash-title">Kitchen Remedials</div>
+                <div class="dash-sub">ZCD kitchen orders · joined to ZCR remedials on Purchase Order number</div>
+            </div>
+            <div class="file-chip" id="file-chip"></div>
+        </div>
+
+        <!-- Metric cards — click to filter -->
+        <div class="metrics">
+            <div class="mc blue">
+                <div class="mc-label">Total Kitchens</div>
+                <div class="mc-value" id="m-total">—</div>
+                <div class="mc-sub">unique ZCD orders</div>
+            </div>
+            <div class="mc green" data-filter="with-rem" onclick="setStatusFilter('with-rem')" title="Click to filter">
+                <div class="mc-label">With Remedials</div>
+                <div class="mc-value" id="m-with-rem">—</div>
+                <div class="mc-sub" id="m-with-rem-pct">of all kitchens</div>
+            </div>
+            <div class="mc amber" data-filter="late" onclick="setStatusFilter('late')" title="Click to filter">
+                <div class="mc-label">Late &gt;28 Days</div>
+                <div class="mc-value" id="m-late">—</div>
+                <div class="mc-sub" id="m-late-pct">of kitchens with remedials</div>
+            </div>
+            <div class="mc purple" data-filter="multi" onclick="setStatusFilter('multi')" title="Click to filter">
+                <div class="mc-label">Multiple Remedials</div>
+                <div class="mc-value" id="m-multi">—</div>
+                <div class="mc-sub" id="m-multi-pct">of kitchens with remedials</div>
+            </div>
+            <div class="mc red" data-filter="problem" onclick="setStatusFilter('problem')" title="Click to filter">
+                <div class="mc-label">Problem Group</div>
+                <div class="mc-value" id="m-problem">—</div>
+                <div class="mc-sub">late &amp; multiple remedials</div>
+            </div>
+            <div class="mc teal">
+                <div class="mc-label">Avg Days to Rem.</div>
+                <div class="mc-value" id="m-avg">—</div>
+                <div class="mc-sub">from delivery to first ZCR</div>
+            </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filters">
+            <span class="fl">Filter:</span>
+            <select class="fs" id="f-status">
+                <option value="all">All orders</option>
+                <option value="no-rem">No remedial</option>
+                <option value="on-time">On time (≤28 days)</option>
+                <option value="late">Late (&gt;28 days)</option>
+                <option value="problem">Problem group</option>
+                <option value="with-rem">All with remedials</option>
+                <option value="multi">Multiple remedials</option>
+            </select>
+            <select class="fs" id="f-group">
+                <option value="">All sales reps</option>
+            </select>
+            <div class="fdiv"></div>
+            <button class="fb on" id="btn-kitchen" onclick="toggleKitchen()">Kitchens only</button>
+            <button class="fb" id="btn-28plus" onclick="toggle28plus()">28+ days only</button>
+            <button class="fb" id="btn-multi-only" onclick="toggleMultiOnly()">Multiple only</button>
+            <div class="fdiv"></div>
+            <button class="f-reset" onclick="resetFilters()">Reset</button>
+            <span class="f-count" id="f-count"></span>
+        </div>
+
+        <!-- Table -->
+        <div class="table-card">
+            <table id="rem-table" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Kitchen Order</th>
+                        <th>Customer</th>
+                        <th>Plot</th>
+                        <th>Sales Rep</th>
+                        <th>Room</th>
+                        <th>Delivery Date</th>
+                        <th>First Remedial</th>
+                        <th>Days</th>
+                        <th>Status</th>
+                        <th>Rem. Orders</th>
+                    </tr>
+                </thead>
+                <tbody id="rem-tbody"></tbody>
+            </table>
+        </div>
+
+    </div><!-- /dashboard -->
+</main>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+let allData     = [];
+let dtInstance  = null;
+let kitchenOnly = true;
+let only28plus  = false;
+let multiOnly   = false;
+
+// ── Excel date helpers ─────────────────────────────────────────
+function xlToDate(serial) {
+    if (serial == null || typeof serial !== 'number') return null;
+    return new Date(Date.UTC(1899, 11, 30) + Math.round(serial) * 86400000);
+}
+function fmtDate(serial) {
+    const d = xlToDate(serial);
+    if (!d) return '—';
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${d.getUTCDate()} ${M[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+function isoDate(serial) {
+    const d = xlToDate(serial);
+    return d ? d.toISOString().split('T')[0] : '';
+}
+
+// ── File upload ────────────────────────────────────────────────
+const zone  = document.getElementById('upload-zone');
+const input = document.getElementById('file-input');
+
+zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
+zone.addEventListener('drop',      e  => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+input.addEventListener('change', () => { if (input.files[0]) handleFile(input.files[0]); });
+
+function handleFile(file) {
+    setView('processing');
+    document.getElementById('processing-label').textContent = 'Reading file…';
+    document.getElementById('file-chip').textContent = file.name;
+
+    const reader = new FileReader();
+    reader.onload = evt => {
+        setTimeout(() => {          // give the spinner a frame to render
+            try {
+                document.getElementById('processing-label').textContent = 'Processing ZCD / ZCR rows…';
+                allData = processExcel(evt.target.result);
+                buildGroupFilter(allData);
+                resetFilters(true);
+                setView('dashboard');
+                document.getElementById('nav-back').classList.add('visible');
+            } catch (err) {
+                alert('Could not process this file.\n\n' + err.message);
+                setView('upload');
+            }
+        }, 50);
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// ── Core processing ────────────────────────────────────────────
+function processExcel(buffer) {
+    const wb   = XLSX.read(buffer, { type: 'array' });
+    const ws   = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+
+    if (rows.length < 2) throw new Error('Sheet appears empty.');
+
+    // Map header names to column indices
+    const h = rows[0].map(v => (v != null ? String(v).trim() : ''));
+    const col = name => {
+        const i = h.indexOf(name);
+        if (i < 0) throw new Error(`Column "${name}" not found. Check export format.`);
+        return i;
+    };
+
+    const C = {
+        SATY:     col('SaTy'),
+        DOC:      col('Sales Doc.'),
+        CREATED:  col('Created On'),
+        DELIVERY: col('Req.dlv.dt'),
+        PO:       col('Purchase order no.'),
+        NAME:     col('Name 1'),
+        GRP:      col('Sales Group'),
+        PLOT:     col('Plot Num'),
+        ROOM:     col('Contracts Room Type'),
+    };
+
+    // ── Step 1: ZCD orders — one row per Sales Doc (first occurrence wins) ──
+    const zcdMap = new Map(); // Sales Doc → order object
+    for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || r[C.SATY] !== 'ZCD') continue;
+        const doc = r[C.DOC] != null ? String(r[C.DOC]).trim() : '';
+        if (!doc || zcdMap.has(doc)) continue;
+        zcdMap.set(doc, {
+            doc,
+            po:          r[C.PO]  != null ? String(r[C.PO]).trim()   : '',
+            customer:    r[C.NAME]  != null ? String(r[C.NAME]).trim() : '',
+            salesGroup:  r[C.GRP]   != null ? String(r[C.GRP]).trim()  : 'Unknown',
+            plot:        r[C.PLOT]  != null ? String(r[C.PLOT]).trim() : '',
+            roomType:    r[C.ROOM]  != null ? String(r[C.ROOM]).trim() : 'Kitchen',
+            delivery:    r[C.DELIVERY],   // Excel serial or null
+        });
+    }
+
+    // ── Step 2: ZCR remedials — group by PO, min creation date ──
+    const zcrMap = new Map(); // PO → { minDate, docSet }
+    for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || r[C.SATY] !== 'ZCR') continue;
+        const po = r[C.PO] != null ? String(r[C.PO]).trim() : '';
+        if (!po) continue;
+        if (!zcrMap.has(po)) zcrMap.set(po, { minDate: null, docs: new Set() });
+        const z = zcrMap.get(po);
+        const zDoc = r[C.DOC] != null ? String(r[C.DOC]).trim() : '';
+        if (zDoc) z.docs.add(zDoc);
+        const d = r[C.CREATED];
+        if (d != null && typeof d === 'number' && (z.minDate === null || d < z.minDate)) {
+            z.minDate = d;
+        }
+    }
+
+    if (zcdMap.size === 0) throw new Error('No ZCD rows found. Check that "SaTy" column contains "ZCD" values.');
+
+    // ── Step 3: Join + compute metrics ──
+    const results = [];
+    for (const [doc, o] of zcdMap) {
+        const zcr      = zcrMap.get(o.po);
+        const firstZcr = zcr ? zcr.minDate : null;
+        const zcrCount = zcr ? zcr.docs.size : 0;
+        let   days     = null;
+
+        if (zcr && typeof o.delivery === 'number' && typeof firstZcr === 'number') {
+            days = Math.round(firstZcr - o.delivery);
+        }
+
+        let status;
+        if (zcrCount === 0)       status = 'no-rem';
+        else if (days === null)   status = 'unknown';
+        else if (days > 28)       status = 'late';
+        else                      status = 'on-time';
+
+        results.push({
+            doc, po: o.po, customer: o.customer,
+            salesGroup: o.salesGroup, plot: o.plot,
+            roomType: o.roomType, delivery: o.delivery,
+            firstZcr, days, zcrCount, status,
+            problemGroup: status === 'late' && zcrCount > 1,
+        });
+    }
+
+    return results;
+}
+
+// ── Filters ────────────────────────────────────────────────────
+function buildGroupFilter(data) {
+    const groups = [...new Set(data.map(d => d.salesGroup))].filter(Boolean).sort();
+    const sel = document.getElementById('f-group');
+    // remove old options except first
+    while (sel.options.length > 1) sel.remove(1);
+    groups.forEach(g => {
+        const opt = new Option(g, g);
+        sel.add(opt);
+    });
+}
+
+function getFilteredData() {
+    const status = document.getElementById('f-status').value;
+    const group  = document.getElementById('f-group').value;
+
+    return allData.filter(d => {
+        if (kitchenOnly && !/kitchen/i.test(d.roomType)) return false;
+        if (group && d.salesGroup !== group) return false;
+
+        if (only28plus) {
+            if (d.days === null || d.days <= 28) return false;
+        }
+        if (multiOnly && d.zcrCount <= 1) return false;
+
+        if (status === 'no-rem')    return d.status === 'no-rem';
+        if (status === 'on-time')   return d.status === 'on-time';
+        if (status === 'late')      return d.status === 'late';
+        if (status === 'problem')   return d.problemGroup;
+        if (status === 'with-rem')  return d.zcrCount > 0;
+        if (status === 'multi')     return d.zcrCount > 1;
+        return true;
+    });
+}
+
+function applyFilters() {
+    const data = getFilteredData();
+    updateMetrics(data);
+    rebuildTable(data);
+    document.getElementById('f-count').textContent = `${data.length.toLocaleString()} orders`;
+}
+
+function resetFilters(silent) {
+    kitchenOnly = true;
+    only28plus  = false;
+    multiOnly   = false;
+    document.getElementById('f-status').value = 'all';
+    document.getElementById('f-group').value  = '';
+    document.getElementById('btn-kitchen').classList.add('on');
+    document.getElementById('btn-28plus').classList.remove('on');
+    document.getElementById('btn-multi-only').classList.remove('on');
+    if (!silent) applyFilters();
+    else applyFilters();
+}
+
+function toggleKitchen() {
+    kitchenOnly = !kitchenOnly;
+    document.getElementById('btn-kitchen').classList.toggle('on', kitchenOnly);
+    applyFilters();
+}
+function toggle28plus() {
+    only28plus = !only28plus;
+    document.getElementById('btn-28plus').classList.toggle('on', only28plus);
+    applyFilters();
+}
+function toggleMultiOnly() {
+    multiOnly = !multiOnly;
+    document.getElementById('btn-multi-only').classList.toggle('on', multiOnly);
+    applyFilters();
+}
+
+function setStatusFilter(val) {
+    // map card click to dropdown value
+    const map = {
+        'with-rem': 'with-rem',
+        'late':     'late',
+        'multi':    'multi',
+        'problem':  'problem',
+    };
+    document.getElementById('f-status').value = map[val] || 'all';
+    applyFilters();
+}
+
+document.getElementById('f-status').addEventListener('change', applyFilters);
+document.getElementById('f-group').addEventListener('change',  applyFilters);
+
+// ── Metrics ────────────────────────────────────────────────────
+function updateMetrics(data) {
+    const withRem  = data.filter(d => d.zcrCount > 0);
+    const withDays = withRem.filter(d => d.days !== null);
+    const late     = withDays.filter(d => d.days > 28);
+    const multi    = withRem.filter(d => d.zcrCount > 1);
+    const problem  = withDays.filter(d => d.days > 28 && d.zcrCount > 1);
+    const avg      = withDays.length
+        ? (withDays.reduce((s, d) => s + d.days, 0) / withDays.length)
+        : null;
+
+    const pct = (n, d) => d ? `${(100 * n / d).toFixed(1)}%` : '—';
+
+    set('m-total',        data.length.toLocaleString());
+    set('m-with-rem',     withRem.length.toLocaleString());
+    set('m-with-rem-pct', `${pct(withRem.length, data.length)} of shown`);
+    set('m-late',         late.length.toLocaleString());
+    set('m-late-pct',     `${pct(late.length, withRem.length)} of with-rem`);
+    set('m-multi',        multi.length.toLocaleString());
+    set('m-multi-pct',    `${pct(multi.length, withRem.length)} of with-rem`);
+    set('m-problem',      problem.length.toLocaleString());
+    set('m-avg',          avg !== null ? avg.toFixed(1) : '—');
+}
+
+function set(id, val) { document.getElementById(id).textContent = val; }
+
+// ── Table ──────────────────────────────────────────────────────
+function rebuildTable(data) {
+    if (dtInstance) {
+        dtInstance.destroy();
+        dtInstance = null;
+    }
+    document.getElementById('rem-tbody').innerHTML = '';
+
+    const tbody = document.getElementById('rem-tbody');
+    const frag  = document.createDocumentFragment();
+
+    data.forEach(d => {
+        const tr = document.createElement('tr');
+
+        // Status badge
+        let badge;
+        if (d.problemGroup) {
+            badge = `<span class="badge b-problem">⚠ Late + Multi</span>`;
+        } else if (d.status === 'no-rem') {
+            badge = `<span class="badge b-noRem">No Remedial</span>`;
+        } else if (d.status === 'late') {
+            badge = `<span class="badge b-late">▲ Late</span>`;
+        } else if (d.status === 'on-time') {
+            badge = `<span class="badge b-onTime">✓ On Time</span>`;
+        } else {
+            badge = `<span class="badge b-unknown">Unknown</span>`;
+        }
+
+        // Days cell
+        let daysHtml;
+        if (d.days === null) {
+            daysHtml = `<span class="days-val days-na">—</span>`;
+        } else if (d.days === 0) {
+            daysHtml = `<span class="days-val days-zero">0</span>`;
+        } else {
+            const cls = d.days > 28 ? 'days-late' : 'days-ok';
+            const pfx = d.days > 0 ? '+' : '';
+            daysHtml = `<span class="days-val ${cls}">${pfx}${d.days}</span>`;
+        }
+
+        // Remedial count
+        const cntClass = d.zcrCount === 0 ? 'zero' : d.zcrCount > 1 ? 'multi' : '';
+        const cntHtml  = `<span class="rem-count ${cntClass}">${d.zcrCount}</span>`;
+
+        tr.innerHTML = `
+            <td><span class="mono">${esc(d.doc)}</span></td>
+            <td>${esc(d.customer)}</td>
+            <td>${esc(d.plot)}</td>
+            <td>${esc(d.salesGroup)}</td>
+            <td>${esc(d.roomType)}</td>
+            <td data-sort="${isoDate(d.delivery)}">${fmtDate(d.delivery)}</td>
+            <td data-sort="${isoDate(d.firstZcr)}">${fmtDate(d.firstZcr)}</td>
+            <td data-sort="${d.days === null ? -9999 : d.days}">${daysHtml}</td>
+            <td>${badge}</td>
+            <td>${cntHtml}</td>
+        `;
+        frag.appendChild(tr);
+    });
+
+    tbody.appendChild(frag);
+
+    dtInstance = $('#rem-table').DataTable({
+        pageLength: 25,
+        order:      [[7, 'desc']],
+        columnDefs: [
+            { targets: [5, 6, 7], orderDataType: 'dom-data-order', type: 'string' },
+        ],
+        dom: '<"dt-top"lf>rt<"dt-bottom"ip>',
+        language: {
+            search:           '',
+            searchPlaceholder:'Search…',
+            lengthMenu:       'Show _MENU_',
+            info:             '_START_–_END_ of _TOTAL_',
+        },
+    });
+}
+
+// Prevent XSS from file data
+function esc(str) {
+    if (str == null) return '—';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// ── View switching ─────────────────────────────────────────────
+function setView(v) {
+    document.getElementById('upload-section').style.display     = v === 'upload'     ? '' : 'none';
+    document.getElementById('processing-section').style.display = v === 'processing' ? '' : 'none';
+    document.getElementById('dashboard').style.display          = v === 'dashboard'  ? '' : 'none';
+}
+
+function resetToUpload() {
+    setView('upload');
+    document.getElementById('nav-back').classList.remove('visible');
+    input.value = '';
+    allData = [];
+    if (dtInstance) { dtInstance.destroy(); dtInstance = null; }
+    document.getElementById('rem-tbody').innerHTML = '';
+}
+</script>
+</body>
+</html>
