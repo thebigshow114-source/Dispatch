@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call-Off Portal · Omega Kitchens</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+:root {
+    --navy:#15333d;--navy-light:#1e4557;--navy-dark:#0e2129;
+    --accent:#2563eb;--accent-light:#3b82f6;
+    --warm:#ea580c;--success:#16a34a;--warning:#d97706;--danger:#dc2626;
+    --ink:#1a2537;
+    --gray-50:#f8fafc;--gray-100:#f1f5f9;--gray-200:#e2e8f0;
+    --gray-300:#cbd5e1;--gray-400:#94a3b8;--gray-500:#64748b;
+    --gray-600:#475569;--gray-700:#334155;--gray-800:#1e293b;
+    --font:'Plus Jakarta Sans',sans-serif;
+    --radius:10px;--radius-lg:16px;
+    --shadow-sm:0 1px 3px rgba(0,0,0,.08);
+    --shadow:0 4px 12px rgba(0,0,0,.1);
+    --shadow-lg:0 8px 24px rgba(0,0,0,.14);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--gray-50);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.5}
+
+/* AUTH */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--navy-dark) 0%,var(--navy) 50%,#1e4a58 100%);padding:24px}
+.auth-card{background:#fff;border-radius:var(--radius-lg);padding:48px 40px;width:100%;max-width:420px;box-shadow:var(--shadow-lg)}
+.auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.auth-logo-icon{width:44px;height:44px;background:var(--navy);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px}
+.auth-logo-text h1{font-size:18px;font-weight:700;color:var(--navy);line-height:1.2}
+.auth-logo-text p{font-size:12px;color:var(--gray-500);font-weight:500}
+.auth-title{font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.auth-subtitle{font-size:13px;color:var(--gray-500);margin-bottom:28px}
+
+/* FORMS */
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-control{width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:14px;color:var(--ink);transition:border-color .15s,box-shadow .15s;background:#fff;appearance:none}
+.form-control:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+select.form-control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%2364748b' d='M8 10.5L3 5.5h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:16px;padding-right:36px;cursor:pointer}
+textarea.form-control{resize:vertical}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 18px;border-radius:8px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s;text-decoration:none;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#1d4ed8;transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.3)}
+.btn-warm{background:var(--warm);color:#fff}.btn-warm:hover{background:#c2410c}
+.btn-outline{background:#fff;color:var(--gray-700);border:1.5px solid var(--gray-200)}.btn-outline:hover{background:var(--gray-50);border-color:var(--gray-300)}
+.btn-ghost{background:transparent;color:var(--gray-600)}.btn-ghost:hover{background:var(--gray-100);color:var(--ink)}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:#b91c1c}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{background:#15803d}
+.btn-sm{padding:7px 12px;font-size:12px}.btn-lg{padding:13px 24px;font-size:15px}.btn-full{width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+
+/* APP LAYOUT */
+#app{display:none;min-height:100vh}
+.top-bar{position:fixed;top:0;left:0;right:0;height:60px;background:var(--navy);display:flex;align-items:center;padding:0 20px;z-index:100;gap:16px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.top-bar-brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.brand-icon{width:32px;height:32px;background:rgba(255,255,255,.1);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+.brand-name{color:#fff;font-size:15px;font-weight:700;letter-spacing:-.3px}
+.brand-divider{width:1px;height:20px;background:rgba(255,255,255,.15)}
+.brand-sub{color:rgba(255,255,255,.55);font-size:12px;font-weight:500}
+.top-bar-spacer{flex:1}
+.top-bar-user{display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 10px;border-radius:8px;transition:background .15s}
+.top-bar-user:hover{background:rgba(255,255,255,.08)}
+.user-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff}
+.user-info{text-align:right}
+.user-name{color:#fff;font-size:13px;font-weight:600}
+.user-role{color:rgba(255,255,255,.5);font-size:11px}
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:60px;left:0;bottom:0;width:220px;background:#fff;border-right:1px solid var(--gray-200);padding:16px 10px;overflow-y:auto;z-index:50;display:flex;flex-direction:column}
+.nav-section-label{font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.8px;padding:8px 10px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--gray-600);font-size:13px;font-weight:500;transition:all .15s;margin-bottom:2px;text-decoration:none}
+.nav-item:hover{background:var(--gray-100);color:var(--ink)}
+.nav-item.active{background:#eff6ff;color:var(--accent);font-weight:600}
+.nav-item i{width:16px;font-size:13px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.nav-spacer{flex:1}
+
+/* CONTENT */
+.main-content{margin-left:220px;padding-top:60px;min-height:100vh}
+.content-area{padding:28px 32px;max-width:1200px}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.page-title{font-size:22px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
+.page-subtitle{font-size:13px;color:var(--gray-500);margin-top:2px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;margin-bottom:28px}
+.stat-card{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow-sm)}
+.stat-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.stat-icon.blue{background:#eff6ff;color:var(--accent)}
+.stat-icon.green{background:#f0fdf4;color:var(--success)}
+.stat-icon.orange{background:#fff7ed;color:var(--warm)}
+.stat-icon.purple{background:#faf5ff;color:#7c3aed}
+.stat-value{font-size:26px;font-weight:800;color:var(--ink);line-height:1}
+.stat-label{font-size:12px;color:var(--gray-500);margin-top:3px}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--gray-100)}
+.card-title{font-size:15px;font-weight:700;color:var(--ink)}
+.card-body{padding:20px}
+
+/* TABLE */
+.table-wrapper{overflow-x:auto}
+table.data-table{width:100%;border-collapse:collapse;font-size:13px}
+table.data-table th{background:var(--gray-50);color:var(--gray-500);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--gray-200);white-space:nowrap}
+table.data-table td{padding:12px 14px;border-bottom:1px solid var(--gray-100);color:var(--ink);vertical-align:middle}
+table.data-table tbody tr:last-child td{border-bottom:none}
+table.data-table tbody tr:hover{background:var(--gray-50)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.badge-draft{background:var(--gray-100);color:var(--gray-600)}
+.badge-submitted{background:#eff6ff;color:var(--accent)}
+.badge-approved{background:#f0fdf4;color:var(--success)}
+.badge-in-production{background:#fff7ed;color:var(--warm)}
+.badge-dispatched{background:#faf5ff;color:#7c3aed}
+.badge-delivered{background:#f0fdf4;color:#15803d}
+.badge-cancelled{background:#fef2f2;color:var(--danger)}
+
+/* WIZARD */
+.wizard-steps{display:flex;align-items:center;background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;overflow-x:auto}
+.wizard-step{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.wizard-step-number{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid var(--gray-200);color:var(--gray-400);flex-shrink:0}
+.wizard-step.active .wizard-step-number{background:var(--accent);border-color:var(--accent);color:#fff}
+.wizard-step.done .wizard-step-number{background:var(--success);border-color:var(--success);color:#fff}
+.wizard-step-label{font-size:13px;font-weight:600;color:var(--gray-400);white-space:nowrap}
+.wizard-step.active .wizard-step-label{color:var(--accent)}
+.wizard-step.done .wizard-step-label{color:var(--success)}
+.wizard-connector{width:40px;height:2px;background:var(--gray-200);flex-shrink:0;margin:0 4px}
+.wizard-connector.done{background:var(--success)}
+
+/* PRODUCT SELECTION */
+.cat-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.cat-tab{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--gray-200);color:var(--gray-600);background:#fff;transition:all .15s}
+.cat-tab:hover{border-color:var(--accent);color:var(--accent)}
+.cat-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:20px}
+.product-card{background:#fff;border:1.5px solid var(--gray-200);border-radius:var(--radius);padding:14px;cursor:pointer;transition:all .15s;position:relative}
+.product-card:hover{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.product-card.selected{border-color:var(--accent);background:#eff6ff;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.product-check{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;display:none;align-items:center;justify-content:center;font-size:10px}
+.product-card.selected .product-check{display:flex}
+.product-sku{font-size:10px;font-weight:600;color:var(--gray-400);text-transform:uppercase;margin-bottom:4px}
+.product-name{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;line-height:1.3}
+.product-unit{font-size:11px;color:var(--gray-400)}
+
+/* QTY CONTROL */
+.qty-row{display:grid;grid-template-columns:1fr auto 36px auto;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--gray-100)}
+.qty-row:last-child{border-bottom:none}
+.qty-control{display:flex;align-items:center;border:1.5px solid var(--gray-200);border-radius:8px;overflow:hidden}
+.qty-btn{width:30px;height:30px;background:var(--gray-50);border:none;cursor:pointer;font-size:14px;font-weight:700;color:var(--gray-600);display:flex;align-items:center;justify-content:center}
+.qty-btn:hover{background:var(--gray-200)}
+.qty-input{width:44px;border:none;text-align:center;font-family:var(--font);font-size:13px;font-weight:600;color:var(--ink);padding:0;background:transparent}
+.qty-input:focus{outline:none}
+
+/* FORM SECTIONS */
+.form-section{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.form-section-title{font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.form-section-title i{color:var(--accent)}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:640px){.form-grid-2,.form-grid-3{grid-template-columns:1fr}}
+
+/* REVIEW */
+.review-section{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.review-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-200);font-size:13px}
+.review-row:last-child{border-bottom:none;padding-bottom:0}
+.review-row label{color:var(--gray-500);font-weight:500}
+.review-row span{color:var(--ink);font-weight:600}
+
+/* FILTER BAR */
+.filters-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:13px;pointer-events:none}
+.search-input{width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--ink);background:#fff;transition:border-color .15s}
+.search-input:focus{outline:none;border-color:var(--accent)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius-lg);padding:28px;width:100%;max-width:520px;box-shadow:var(--shadow-lg);animation:slideUp .2s ease;max-height:90vh;overflow-y:auto}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-title{font-size:17px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.modal-subtitle{font-size:13px;color:var(--gray-500);margin-bottom:20px}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--gray-100)}
+
+/* TOAST */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--ink);color:#fff;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:10px;animation:toastIn .2s ease;max-width:320px}
+.toast.success{background:#15803d}.toast.error{background:var(--danger)}.toast.warning{background:var(--warning)}
+@keyframes toastIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* EMPTY STATE */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;color:var(--gray-400)}
+.empty-state i{font-size:40px;margin-bottom:12px}
+.empty-state p{font-size:14px;font-weight:600;color:var(--gray-500)}
+
+/* UTIL */
+.order-ref{font-family:'Courier New',monospace;font-size:12px;background:var(--gray-100);color:var(--gray-600);padding:3px 8px;border-radius:5px;font-weight:600}
+.text-muted{color:var(--gray-400)}.text-sm{font-size:12px}.mt-4{margin-top:16px}
+.d-flex{display:flex}.gap-8{gap:8px}.align-center{align-items:center}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:99px}
+    </style>
+</head>
+<body>
+
+<!-- ── AUTH ── -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon"><i class="fas fa-utensils"></i></div>
+      <div class="auth-logo-text"><h1>Omega Kitchens</h1><p>Call-Off Portal</p></div>
+    </div>
+    <h2 class="auth-title">Sign in</h2>
+    <p class="auth-subtitle">Access the kitchen call-off management portal</p>
+    <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="l-name" placeholder="Your full name" value="Sarah Mitchell"></div>
+    <div class="form-group"><label class="form-label">Role</label>
+      <select class="form-control" id="l-role">
+        <option value="qs">Quantity Surveyor (QS)</option>
+        <option value="site_manager">Site Manager</option>
+        <option value="admin" selected>Admin</option>
+        <option value="installation_manager">Installation Manager</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Company / Site</label><input class="form-control" id="l-company" placeholder="Company or site name" value="Omega Kitchens HQ"></div>
+    <button class="btn btn-primary btn-full btn-lg mt-4" onclick="login()"><i class="fas fa-arrow-right-to-bracket"></i> Sign In</button>
+    <p class="text-muted text-sm mt-4" style="text-align:center">Demo — select any role to explore</p>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+  <div class="top-bar">
+    <div class="top-bar-brand">
+      <div class="brand-icon"><i class="fas fa-utensils"></i></div>
+      <span class="brand-name">Omega Kitchens</span>
+      <div class="brand-divider"></div>
+      <span class="brand-sub">Call-Off Portal</span>
+    </div>
+    <div class="top-bar-spacer"></div>
+    <div class="top-bar-user" onclick="logout()">
+      <div class="user-info"><div class="user-name" id="ub-name"></div><div class="user-role" id="ub-role"></div></div>
+      <div class="user-avatar" id="ub-avatar"></div>
+    </div>
+  </div>
+
+  <div class="sidebar" id="sidebar">
+    <div class="nav-section-label">Main</div>
+    <div class="nav-item active" id="nav-dashboard" onclick="go('dashboard')"><i class="fas fa-gauge-high"></i> Dashboard</div>
+    <div class="nav-item" id="nav-calloff" onclick="go('calloff')"><i class="fas fa-plus-circle"></i> New Call-Off</div>
+    <div class="nav-item" id="nav-orders" onclick="go('orders')"><i class="fas fa-list-check"></i> All Orders <span class="nav-badge" id="nav-badge" style="display:none">0</span></div>
+    <div class="nav-section-label" id="admin-nav-label" style="display:none">Admin</div>
+    <div class="nav-item" id="nav-catalogue" style="display:none" onclick="go('catalogue')"><i class="fas fa-boxes-stacked"></i> Product Catalogue</div>
+    <div class="nav-item" id="nav-users" style="display:none" onclick="go('users')"><i class="fas fa-users"></i> Users</div>
+    <div class="nav-spacer"></div>
+    <div style="border-top:1px solid var(--gray-100);padding-top:10px">
+      <div class="nav-item" onclick="logout()"><i class="fas fa-arrow-right-from-bracket"></i> Sign Out</div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="content-area" id="content"></div>
+  </div>
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="modal-overlay" id="order-modal">
+  <div class="modal" style="max-width:700px">
+    <div id="order-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('order-modal')">Close</button>
+      <button class="btn btn-success" id="modal-approve-btn" style="display:none" onclick="approveFromModal()"><i class="fas fa-check"></i> Approve</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal">
+    <div class="modal-title" id="pm-title">Add Product</div>
+    <div class="modal-subtitle">Add or edit a catalogue item</div>
+    <div class="form-grid-2" style="gap:12px">
+      <div class="form-group"><label class="form-label">SKU *</label><input class="form-control" id="pm-sku" placeholder="e.g. BU600"></div>
+      <div class="form-group"><label class="form-label">Category</label>
+        <select class="form-control" id="pm-cat">
+          <option>Base Units</option><option>Wall Units</option><option>Tall Units</option>
+          <option>Worktops</option><option>Appliances</option><option>Hardware</option>
+          <option>Sinks &amp; Taps</option><option>Accessories</option>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Name *</label><input class="form-control" id="pm-name" placeholder="Product name"></div>
+      <div class="form-group"><label class="form-label">Unit</label>
+        <select class="form-control" id="pm-unit"><option value="each">Each</option><option value="metre">Metre</option><option value="set">Set</option><option value="pair">Pair</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><input class="form-control" id="pm-notes" placeholder="Optional description"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('product-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title" id="confirm-title">Confirm</div>
+    <p style="color:var(--gray-600);font-size:14px;margin-top:8px" id="confirm-msg"></p>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('confirm-modal')">Cancel</button>
+      <button class="btn btn-danger" id="confirm-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+const SK = { products:'oko_products', orders:'oko_orders', user:'oko_user' };
+let S = { user:null, products:[], orders:[], view:'dashboard', wizard:null, selCat:'All', editPid:null, modalOrderId:null };
+
+function ls(k){ try{ return JSON.parse(localStorage.getItem(k))||null }catch{ return null } }
+function lsSet(k,v){ localStorage.setItem(k,JSON.stringify(v)) }
+
+// ── SEED ─────────────────────────────────────────────────────
+const PRODUCTS_SEED = [
+  {id:'p01',sku:'BU300',name:'300mm Base Unit',category:'Base Units',unit:'each',notes:''},
+  {id:'p02',sku:'BU400',name:'400mm Base Unit',category:'Base Units',unit:'each',notes:''},
+  {id:'p03',sku:'BU500',name:'500mm Base Unit',category:'Base Units',unit:'each',notes:''},
+  {id:'p04',sku:'BU600',name:'600mm Base Unit',category:'Base Units',unit:'each',notes:''},
+  {id:'p05',sku:'BU1000',name:'1000mm Base Unit',category:'Base Units',unit:'each',notes:''},
+  {id:'p06',sku:'BUS600',name:'600mm Sink Base Unit',category:'Base Units',unit:'each',notes:'Pre-drilled for sink'},
+  {id:'p07',sku:'BUC',name:'Corner Base Unit',category:'Base Units',unit:'each',notes:'Le Mans mechanism available'},
+  {id:'p08',sku:'WU300',name:'300mm Wall Unit',category:'Wall Units',unit:'each',notes:''},
+  {id:'p09',sku:'WU400',name:'400mm Wall Unit',category:'Wall Units',unit:'each',notes:''},
+  {id:'p10',sku:'WU500',name:'500mm Wall Unit',category:'Wall Units',unit:'each',notes:''},
+  {id:'p11',sku:'WU600',name:'600mm Wall Unit',category:'Wall Units',unit:'each',notes:''},
+  {id:'p12',sku:'WUC',name:'Corner Wall Unit',category:'Wall Units',unit:'each',notes:''},
+  {id:'p13',sku:'WU600G',name:'Glass Door Wall Unit 600',category:'Wall Units',unit:'each',notes:'Glazed door'},
+  {id:'p14',sku:'TU600L',name:'600mm Larder Unit',category:'Tall Units',unit:'each',notes:'1970mm high'},
+  {id:'p15',sku:'TU600B',name:'600mm Broom Cupboard',category:'Tall Units',unit:'each',notes:'Full height'},
+  {id:'p16',sku:'TU600F',name:'600mm Fridge Housing',category:'Tall Units',unit:'each',notes:'Integrated fridge-freezer'},
+  {id:'p17',sku:'TU600O',name:'600mm Oven Housing',category:'Tall Units',unit:'each',notes:'Double oven ready'},
+  {id:'p18',sku:'WT-LAM',name:'Laminate Worktop',category:'Worktops',unit:'metre',notes:'600mm depth'},
+  {id:'p19',sku:'WT-OAK',name:'Solid Oak Worktop',category:'Worktops',unit:'metre',notes:'40mm thick'},
+  {id:'p20',sku:'WT-QTZ',name:'Quartz Worktop',category:'Worktops',unit:'metre',notes:'Fabricated to measure'},
+  {id:'p21',sku:'WT-CMP',name:'Compact Laminate Worktop',category:'Worktops',unit:'metre',notes:'12mm waterproof'},
+  {id:'p22',sku:'APP-OV',name:'Single Oven',category:'Appliances',unit:'each',notes:'Integrated 60cm'},
+  {id:'p23',sku:'APP-OVD',name:'Double Oven',category:'Appliances',unit:'each',notes:'Integrated 60cm'},
+  {id:'p24',sku:'APP-HOB',name:'Gas Hob 4 Burner',category:'Appliances',unit:'each',notes:'60cm'},
+  {id:'p25',sku:'APP-IH',name:'Induction Hob',category:'Appliances',unit:'each',notes:'60cm 4 zone'},
+  {id:'p26',sku:'APP-HD',name:'Cooker Hood',category:'Appliances',unit:'each',notes:'60cm canopy'},
+  {id:'p27',sku:'APP-DW',name:'Dishwasher',category:'Appliances',unit:'each',notes:'Integrated full height'},
+  {id:'p28',sku:'APP-FF',name:'Fridge Freezer',category:'Appliances',unit:'each',notes:'Integrated 70/30'},
+  {id:'p29',sku:'HW-HDL',name:'Cabinet Handle',category:'Hardware',unit:'each',notes:'Bar handle chrome'},
+  {id:'p30',sku:'HW-HNG',name:'Concealed Hinge (pair)',category:'Hardware',unit:'pair',notes:'Soft close'},
+  {id:'p31',sku:'HW-LEG',name:'Adjustable Leg',category:'Hardware',unit:'each',notes:'100–150mm'},
+  {id:'p32',sku:'HW-PLI',name:'Plinth 2.4m',category:'Hardware',unit:'each',notes:'150mm high'},
+  {id:'p33',sku:'HW-COR',name:'Cornice 2.4m',category:'Hardware',unit:'each',notes:'Matching finish'},
+  {id:'p34',sku:'HW-LPE',name:'Light Pelmet 2.4m',category:'Hardware',unit:'each',notes:'Under-cabinet LED'},
+  {id:'p35',sku:'ST-S1',name:'Stainless Steel Sink 1B',category:'Sinks & Taps',unit:'each',notes:'1 bowl inset'},
+  {id:'p36',sku:'ST-S15',name:'Stainless Steel Sink 1.5B',category:'Sinks & Taps',unit:'each',notes:'1.5 bowl inset'},
+  {id:'p37',sku:'ST-TAP',name:'Chrome Mixer Tap',category:'Sinks & Taps',unit:'each',notes:'Quarter-turn monobloc'},
+  {id:'p38',sku:'ACC-BIN',name:'Pull-Out Bin',category:'Accessories',unit:'each',notes:'Dual compartment 40L'},
+  {id:'p39',sku:'ACC-DRW',name:'Drawer Insert',category:'Accessories',unit:'each',notes:'Cutlery divider'},
+  {id:'p40',sku:'ACC-SPR',name:'Spice Rack',category:'Accessories',unit:'each',notes:'Pull-out 150mm wide'},
+];
+
+const ORDERS_SEED = [
+  {id:'o1',reference:'OKO-2025-0001',createdBy:"James O'Brien",role:'site_manager',
+   site:'Maple Gardens Development',plotNumber:'Plots 12–14',contactName:"James O'Brien",contactPhone:'07712 345678',
+   requestedDelivery:'2025-08-15',deliveryWindow:'AM',notes:'All units together please',
+   items:[{productId:'p04',qty:4,notes:''},{productId:'p06',qty:1,notes:''},{productId:'p11',qty:5,notes:''},{productId:'p14',qty:2,notes:''},{productId:'p18',qty:6,notes:'Anthracite grey'},{productId:'p22',qty:3,notes:''},{productId:'p35',qty:3,notes:''},{productId:'p37',qty:3,notes:''}],
+   status:'approved',createdAt:'2025-07-22T09:30:00Z',updatedAt:'2025-07-23T14:00:00Z'},
+  {id:'o2',reference:'OKO-2025-0002',createdBy:'Priya Sharma',role:'qs',
+   site:'Riverside Quarter',plotNumber:'Block B Apt 4–9',contactName:'Priya Sharma',contactPhone:'07890 123456',
+   requestedDelivery:'2025-09-01',deliveryWindow:'',notes:'',
+   items:[{productId:'p03',qty:6},{productId:'p04',qty:12},{productId:'p11',qty:8},{productId:'p16',qty:6},{productId:'p20',qty:8},{productId:'p25',qty:6},{productId:'p27',qty:6},{productId:'p28',qty:6}],
+   status:'submitted',createdAt:'2025-07-25T11:00:00Z',updatedAt:'2025-07-25T11:00:00Z'},
+  {id:'o3',reference:'OKO-2025-0003',createdBy:'Tom Halligan',role:'site_manager',
+   site:'Park View Heights',plotNumber:'Plot 7',contactName:'Tom Halligan',contactPhone:'07500 987654',
+   requestedDelivery:'2025-08-28',deliveryWindow:'PM',notes:'Call site 1hr before delivery — restricted access',
+   items:[{productId:'p04',qty:3},{productId:'p06',qty:1},{productId:'p07',qty:1},{productId:'p11',qty:4},{productId:'p19',qty:5},{productId:'p24',qty:1},{productId:'p26',qty:1},{productId:'p36',qty:1}],
+   status:'in-production',createdAt:'2025-07-20T08:45:00Z',updatedAt:'2025-07-24T16:30:00Z'},
+];
+
+function seed(){
+  if(!ls(SK.products)) lsSet(SK.products, PRODUCTS_SEED);
+  if(!ls(SK.orders))   lsSet(SK.orders,   ORDERS_SEED);
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+const ROLES = {qs:'Quantity Surveyor',site_manager:'Site Manager',admin:'Admin',installation_manager:'Installation Manager'};
+const ROLE_COLORS = {qs:'#7c3aed',site_manager:'#2563eb',admin:'#ea580c',installation_manager:'#16a34a'};
+
+function login(){
+  const name = document.getElementById('l-name').value.trim();
+  const role = document.getElementById('l-role').value;
+  const company = document.getElementById('l-company').value.trim();
+  if(!name){ toast('Please enter your name','error'); return; }
+  const u = {id:'u'+Date.now(),name,role,company};
+  lsSet(SK.user,u);
+  S.user = u;
+  bootApp();
+}
+
+function logout(){
+  localStorage.removeItem(SK.user);
+  S.user = null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+}
+
+function bootApp(){
+  S.products = ls(SK.products)||[];
+  S.orders   = ls(SK.orders)||[];
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  const u = S.user;
+  document.getElementById('ub-name').textContent = u.name;
+  document.getElementById('ub-role').textContent = ROLES[u.role]||u.role;
+  const av = document.getElementById('ub-avatar');
+  av.textContent = u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  av.style.background = ROLE_COLORS[u.role]||'#2563eb';
+  if(u.role==='admin'){
+    document.getElementById('admin-nav-label').style.display='block';
+    document.getElementById('nav-catalogue').style.display='flex';
+    document.getElementById('nav-users').style.display='flex';
+  }
+  updateBadge();
+  go('dashboard');
+}
+
+// ── NAVIGATION ───────────────────────────────────────────────
+function go(view){
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const nav = document.getElementById('nav-'+view)||document.getElementById('nav-dashboard');
+  if(nav) nav.classList.add('active');
+  S.view = view;
+  const el = document.getElementById('content');
+  switch(view){
+    case 'dashboard': el.innerHTML = renderDash(); break;
+    case 'calloff':   S.wizard = freshWizard(); el.innerHTML = renderWizardShell(); break;
+    case 'orders':    el.innerHTML = renderOrders(); break;
+    case 'catalogue': el.innerHTML = renderCatalogue(); break;
+    case 'users':     el.innerHTML = renderUsers(); break;
+    default:          el.innerHTML = renderDash();
+  }
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+function renderDash(){
+  const O = S.orders;
+  const submitted = O.filter(o=>o.status==='submitted').length;
+  const approved  = O.filter(o=>o.status==='approved').length;
+  const inProd    = O.filter(o=>o.status==='in-production').length;
+  const recent = [...O].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,8);
+  return `
+<div class="page-header">
+  <div><div class="page-title">Dashboard</div><div class="page-subtitle">Welcome back, ${esc(S.user.name)}</div></div>
+  <button class="btn btn-primary" onclick="go('calloff')"><i class="fas fa-plus"></i> New Call-Off</button>
+</div>
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-clipboard-list"></i></div><div><div class="stat-value">${O.length}</div><div class="stat-label">Total Orders</div></div></div>
+  <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-clock"></i></div><div><div class="stat-value">${submitted}</div><div class="stat-label">Awaiting Review</div></div></div>
+  <div class="stat-card"><div class="stat-icon green"><i class="fas fa-check-circle"></i></div><div><div class="stat-value">${approved}</div><div class="stat-label">Approved</div></div></div>
+  <div class="stat-card"><div class="stat-icon purple"><i class="fas fa-industry"></i></div><div><div class="stat-value">${inProd}</div><div class="stat-label">In Production</div></div></div>
+</div>
+<div class="card">
+  <div class="card-header"><span class="card-title">Recent Call-Offs</span><button class="btn btn-sm btn-outline" onclick="go('orders')">View All <i class="fas fa-arrow-right"></i></button></div>
+  ${recent.length===0?emptyState('No call-offs yet','Create your first call-off above'):
+  `<div class="table-wrapper"><table class="data-table"><thead><tr><th>Reference</th><th>Site</th><th>Plot/Unit</th><th>Created By</th><th>Delivery</th><th>Status</th><th></th></tr></thead>
+  <tbody>${recent.map(o=>`<tr>
+    <td><span class="order-ref">${esc(o.reference)}</span></td>
+    <td>${esc(o.site)}</td><td class="text-muted text-sm">${esc(o.plotNumber)}</td>
+    <td>${esc(o.createdBy)}</td><td>${fmtDate(o.requestedDelivery)}</td>
+    <td>${badge(o.status)}</td>
+    <td><button class="btn btn-sm btn-ghost" onclick="openOrder('${o.id}')"><i class="fas fa-eye"></i></button></td>
+  </tr>`).join('')}</tbody></table></div>`}
+</div>`;
+}
+
+// ── ORDERS VIEW ───────────────────────────────────────────────
+function renderOrders(){
+  return `
+<div class="page-header">
+  <div><div class="page-title">All Call-Offs</div><div class="page-subtitle">${S.orders.length} orders</div></div>
+  <button class="btn btn-primary" onclick="go('calloff')"><i class="fas fa-plus"></i> New Call-Off</button>
+</div>
+<div class="filters-bar">
+  <div class="search-wrap"><i class="fas fa-search"></i><input class="search-input" id="srch" placeholder="Search site, reference, created by…" oninput="filterOrders()"></div>
+  <select class="form-control" id="stat-filter" style="width:auto" onchange="filterOrders()">
+    <option value="">All Statuses</option>
+    <option>submitted</option><option>approved</option><option>in-production</option><option>dispatched</option><option>delivered</option><option>cancelled</option>
+  </select>
+</div>
+<div class="card"><div class="table-wrapper">
+  <table class="data-table"><thead><tr><th>Reference</th><th>Site</th><th>Plot/Unit</th><th>Items</th><th>Created By</th><th>Delivery</th><th>Status</th><th></th></tr></thead>
+  <tbody id="orders-body">${ordersRows(S.orders)}</tbody></table>
+</div></div>`;
+}
+
+function ordersRows(list){
+  if(!list.length) return `<tr><td colspan="8">${emptyState('No orders found')}</td></tr>`;
+  return list.map(o=>`<tr>
+    <td><span class="order-ref">${esc(o.reference)}</span></td>
+    <td><strong>${esc(o.site)}</strong></td>
+    <td class="text-muted text-sm">${esc(o.plotNumber)}</td>
+    <td class="text-muted">${o.items.length}</td>
+    <td>${esc(o.createdBy)}</td>
+    <td>${fmtDate(o.requestedDelivery)}</td>
+    <td>${badge(o.status)}</td>
+    <td><div class="d-flex gap-8 align-center">
+      <button class="btn btn-sm btn-ghost" onclick="openOrder('${o.id}')"><i class="fas fa-eye"></i></button>
+      ${S.user.role==='admin'&&o.status==='submitted'?`<button class="btn btn-sm btn-success" onclick="setStatus('${o.id}','approved')"><i class="fas fa-check"></i></button>`:''}
+      ${(S.user.role==='admin'||o.createdBy===S.user.name)&&o.status==='submitted'?`<button class="btn btn-sm btn-danger" onclick="confirmDel('${o.id}')"><i class="fas fa-trash"></i></button>`:''}
+    </div></td>
+  </tr>`).join('');
+}
+
+function filterOrders(){
+  const srch = (document.getElementById('srch')?.value||'').toLowerCase();
+  const stat = document.getElementById('stat-filter')?.value||'';
+  let list = S.orders;
+  if(stat) list=list.filter(o=>o.status===stat);
+  if(srch) list=list.filter(o=>
+    o.site.toLowerCase().includes(srch)||
+    o.reference.toLowerCase().includes(srch)||
+    o.createdBy.toLowerCase().includes(srch)||
+    (o.plotNumber||'').toLowerCase().includes(srch)
+  );
+  document.getElementById('orders-body').innerHTML = ordersRows(list);
+}
+
+// ── ORDER DETAIL ──────────────────────────────────────────────
+function openOrder(id){
+  const o = S.orders.find(x=>x.id===id);
+  if(!o) return;
+  S.modalOrderId = id;
+  const appBtn = document.getElementById('modal-approve-btn');
+  appBtn.style.display = (S.user.role==='admin'&&o.status==='submitted')?'inline-flex':'none';
+
+  const rows = o.items.map(it=>{
+    const p = S.products.find(pr=>pr.id===it.productId);
+    return `<tr><td>${p?p.sku:'?'}</td><td>${p?esc(p.name):'Unknown'}</td><td>${it.qty}</td><td>${p?p.unit:''}</td><td class="text-muted text-sm">${it.notes||'—'}</td></tr>`;
+  }).join('');
+
+  const statusBtns = S.user.role==='admin' ? ['submitted','approved','in-production','dispatched','delivered','cancelled'].map(s=>
+    `<button class="btn btn-sm btn-outline" onclick="setStatus('${o.id}','${s}')" ${o.status===s?'disabled':''} style="${o.status===s?'opacity:.4':''}">${statusLabel(s)}</button>`
+  ).join('') : '';
+
+  document.getElementById('order-modal-body').innerHTML = `
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+  <div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <div style="font-size:18px;font-weight:700;color:var(--ink)">${esc(o.site)}</div>${badge(o.status)}
+    </div>
+    <span class="order-ref">${esc(o.reference)}</span>
+  </div>
+</div>
+<div class="review-section">
+  <div class="review-row"><label>Plot / Unit</label><span>${esc(o.plotNumber)}</span></div>
+  <div class="review-row"><label>Contact</label><span>${esc(o.contactName)}${o.contactPhone?' · '+esc(o.contactPhone):''}</span></div>
+  <div class="review-row"><label>Requested Delivery</label><span>${fmtDate(o.requestedDelivery)}${o.deliveryWindow?' ('+o.deliveryWindow+')':''}</span></div>
+  <div class="review-row"><label>Created By</label><span>${esc(o.createdBy)} · ${ROLES[o.role]||o.role}</span></div>
+  <div class="review-row"><label>Submitted</label><span>${fmtDT(o.createdAt)}</span></div>
+  ${o.notes?`<div class="review-row"><label>Notes</label><span>${esc(o.notes)}</span></div>`:''}
+</div>
+<div style="font-weight:700;font-size:13px;margin:16px 0 10px">Items (${o.items.length})</div>
+<div class="table-wrapper"><table class="data-table"><thead><tr><th>SKU</th><th>Name</th><th>Qty</th><th>Unit</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table></div>
+${S.user.role==='admin'?`<div style="margin-top:16px"><div class="form-label">Update Status</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${statusBtns}</div></div>`:''}`;
+
+  document.getElementById('order-modal').classList.add('open');
+}
+
+function approveFromModal(){
+  if(S.modalOrderId) setStatus(S.modalOrderId,'approved');
+  document.getElementById('modal-approve-btn').style.display='none';
+}
+
+function setStatus(id,newStatus){
+  const idx = S.orders.findIndex(o=>o.id===id);
+  if(idx<0) return;
+  S.orders[idx].status = newStatus;
+  S.orders[idx].updatedAt = new Date().toISOString();
+  lsSet(SK.orders,S.orders);
+  toast(`Status updated: ${statusLabel(newStatus)}`,'success');
+  updateBadge();
+  closeModal('order-modal');
+  if(S.view==='orders') go('orders');
+  if(S.view==='dashboard') go('dashboard');
+}
+
+function confirmDel(id){
+  const o = S.orders.find(x=>x.id===id);
+  if(!o) return;
+  document.getElementById('confirm-title').textContent='Delete Call-Off';
+  document.getElementById('confirm-msg').textContent=`Delete "${o.reference}" for ${o.site}? This cannot be undone.`;
+  document.getElementById('confirm-btn').onclick=()=>{ delOrder(id); closeModal('confirm-modal'); };
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function delOrder(id){
+  S.orders = S.orders.filter(o=>o.id!==id);
+  lsSet(SK.orders,S.orders);
+  updateBadge();
+  toast('Call-off deleted','success');
+  go('orders');
+}
+
+// ── WIZARD ───────────────────────────────────────────────────
+function freshWizard(){ return {step:1,site:{},items:[],delivery:'',window:'',notes:''}; }
+
+function renderWizardShell(){
+  return `
+<div class="page-header">
+  <div><div class="page-title">New Call-Off</div><div class="page-subtitle">Configure and submit a kitchen order</div></div>
+</div>
+<div id="wiz"></div>`;
+}
+
+function renderWiz(){
+  const steps=['Site Details','Select Products','Quantities & Delivery','Review & Submit'];
+  const s = S.wizard.step;
+  const stepsHtml = steps.map((label,i)=>{
+    const n=i+1, cls=n===s?'active':n<s?'done':'';
+    const icon = n<s?'<i class="fas fa-check"></i>':n;
+    const conn = i<steps.length-1?`<div class="wizard-connector ${n<s?'done':''}"></div>`:'';
+    return `<div class="wizard-step ${cls}"><div class="wizard-step-number">${icon}</div><span class="wizard-step-label">${label}</span></div>${conn}`;
+  }).join('');
+
+  let body='';
+  if(s===1) body=wizStep1();
+  if(s===2) body=wizStep2();
+  if(s===3) body=wizStep3();
+  if(s===4) body=wizStep4();
+
+  const backBtn=`<button class="btn btn-outline" onclick="wizBack()" ${s===1?'disabled':''}>Back</button>`;
+  const nextBtn=s<4
+    ?`<button class="btn btn-primary" onclick="wizNext()">Next <i class="fas fa-arrow-right"></i></button>`
+    :`<button class="btn btn-warm btn-lg" onclick="submitOrder()"><i class="fas fa-paper-plane"></i> Submit Call-Off</button>`;
+
+  document.getElementById('wiz').innerHTML=`
+<div class="wizard-steps">${stepsHtml}</div>
+<div>${body}</div>
+<div style="display:flex;justify-content:space-between;margin-top:20px">${backBtn}${nextBtn}</div>`;
+}
+
+function wizStep1(){
+  const d=S.wizard.site;
+  return `
+<div class="form-section">
+  <div class="form-section-title"><i class="fas fa-building"></i> Site Information</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">Development / Site Name *</label><input class="form-control" id="w-site" placeholder="e.g. Riverside Quarter" value="${esc(d.name||'')}"></div>
+    <div class="form-group"><label class="form-label">Plot / Flat / Unit *</label><input class="form-control" id="w-plot" placeholder="e.g. Plot 12, Apt 4B" value="${esc(d.plotNumber||'')}"></div>
+    <div class="form-group"><label class="form-label">Number of Kitchens</label><input class="form-control" type="number" id="w-kits" min="1" placeholder="1" value="${esc(d.kitchens||'')}"></div>
+  </div>
+</div>
+<div class="form-section">
+  <div class="form-section-title"><i class="fas fa-user"></i> Site Contact</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="form-group"><label class="form-label">Contact Name *</label><input class="form-control" id="w-con" placeholder="On-site contact" value="${esc(d.contactName||S.user.name)}"></div>
+    <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="w-phone" placeholder="Mobile number" value="${esc(d.contactPhone||'')}"></div>
+  </div>
+</div>`;
+}
+
+function wizStep2(){
+  const cats=['All',...new Set(S.products.map(p=>p.category))];
+  const cat=S.selCat;
+  const filtered=cat==='All'?S.products:S.products.filter(p=>p.category===cat);
+  const selIds=S.wizard.items.map(i=>i.productId);
+
+  const catTabs=cats.map(c=>`<div class="cat-tab ${c===cat?'active':''}" onclick="selCat('${c}')">${c}</div>`).join('');
+  const cards=filtered.map(p=>`
+<div class="product-card ${selIds.includes(p.id)?'selected':''}" onclick="toggleProd('${p.id}')">
+  <div class="product-check"><i class="fas fa-check"></i></div>
+  <div class="product-sku">${esc(p.sku)}</div>
+  <div class="product-name">${esc(p.name)}</div>
+  <div class="product-unit">Per ${p.unit}${p.notes?' · '+esc(p.notes):''}</div>
+</div>`).join('');
+
+  const selectedList = S.wizard.items.length===0?'':`
+<div class="card">
+  <div class="card-header"><span class="card-title">Selected (${S.wizard.items.length})</span></div>
+  <div>${S.wizard.items.map((it,i)=>{
+    const p=S.products.find(pr=>pr.id===it.productId);
+    return p?`<div class="qty-row">
+      <div><strong>${esc(p.name)}</strong><div class="text-muted text-sm">${esc(p.sku)} · per ${p.unit}</div></div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="chQty(${i},-1)">−</button>
+        <input class="qty-input" type="number" min="1" value="${it.qty}" onchange="setQty(${i},this.value)">
+        <button class="qty-btn" onclick="chQty(${i},1)">+</button>
+      </div>
+      <span class="text-muted text-sm">${p.unit}</span>
+      <button class="btn btn-sm btn-ghost" onclick="rmItem(${i})"><i class="fas fa-times"></i></button>
+    </div>`:''
+  }).join('')}</div>
+</div>`;
+
+  return `
+<div class="card">
+  <div class="card-header"><span class="card-title">Product Catalogue</span><span class="text-muted text-sm">${selIds.length} selected</span></div>
+  <div class="card-body">
+    <div class="cat-tabs">${catTabs}</div>
+    <div class="product-grid">${cards}</div>
+  </div>
+</div>${selectedList}`;
+}
+
+function wizStep3(){
+  const today=new Date().toISOString().split('T')[0];
+  const itemRows=S.wizard.items.map(it=>{
+    const p=S.products.find(pr=>pr.id===it.productId);
+    return p?`<tr><td>${esc(p.sku)}</td><td>${esc(p.name)}</td><td>${it.qty}</td><td>${p.unit}</td></tr>`:'';
+  }).join('');
+  return `
+<div class="form-section">
+  <div class="form-section-title"><i class="fas fa-calendar-alt"></i> Delivery Details</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="form-group"><label class="form-label">Requested Delivery Date *</label><input class="form-control" type="date" id="w-del" min="${today}" value="${S.wizard.delivery||''}"></div>
+    <div class="form-group"><label class="form-label">Preferred Window</label>
+      <select class="form-control" id="w-win">
+        <option value="">Any time</option>
+        <option value="AM" ${S.wizard.window==='AM'?'selected':''}>AM (7am–12pm)</option>
+        <option value="PM" ${S.wizard.window==='PM'?'selected':''}>PM (12pm–5pm)</option>
+        <option value="All day" ${S.wizard.window==='All day'?'selected':''}>All day</option>
+      </select>
+    </div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">Delivery Notes</label>
+      <textarea class="form-control" id="w-notes" rows="3" placeholder="Access instructions, restrictions, special requirements…">${esc(S.wizard.notes||'')}</textarea>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header"><span class="card-title">Order Summary (${S.wizard.items.length} items)</span></div>
+  <div class="table-wrapper"><table class="data-table"><thead><tr><th>SKU</th><th>Product</th><th>Qty</th><th>Unit</th></tr></thead><tbody>${itemRows}</tbody></table></div>
+</div>`;
+}
+
+function wizStep4(){
+  const w=S.wizard;
+  const rows=w.items.map(it=>{
+    const p=S.products.find(pr=>pr.id===it.productId);
+    return p?`<tr><td>${esc(p.sku)}</td><td>${esc(p.name)}</td><td>${it.qty}</td><td>${p.unit}</td></tr>`:'';
+  }).join('');
+  return `
+<div class="card">
+  <div class="card-header"><span class="card-title">Review &amp; Confirm</span></div>
+  <div class="card-body">
+    <div style="font-weight:700;font-size:13px;margin-bottom:10px">Site Details</div>
+    <div class="review-section">
+      <div class="review-row"><label>Development / Site</label><span>${esc(w.site.name)}</span></div>
+      <div class="review-row"><label>Plot / Unit</label><span>${esc(w.site.plotNumber)}</span></div>
+      ${w.site.kitchens?`<div class="review-row"><label>Kitchens</label><span>${w.site.kitchens}</span></div>`:''}
+      <div class="review-row"><label>Contact</label><span>${esc(w.site.contactName)}${w.site.contactPhone?' · '+esc(w.site.contactPhone):''}</span></div>
+      <div class="review-row"><label>Requested Delivery</label><span>${fmtDate(w.delivery)}${w.window?' ('+w.window+')':''}</span></div>
+      ${w.notes?`<div class="review-row"><label>Notes</label><span>${esc(w.notes)}</span></div>`:''}
+    </div>
+    <div style="font-weight:700;font-size:13px;margin:16px 0 10px">Items (${w.items.length})</div>
+    <div class="table-wrapper"><table class="data-table"><thead><tr><th>SKU</th><th>Product</th><th>Qty</th><th>Unit</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;margin-top:16px;display:flex;align-items:flex-start;gap:10px">
+      <i class="fas fa-info-circle" style="color:var(--accent);margin-top:2px;flex-shrink:0"></i>
+      <p style="font-size:13px;color:#1e40af"><strong>Ready to submit?</strong> Once submitted, your call-off will be reviewed by the admin team and progressed to production.</p>
+    </div>
+  </div>
+</div>`;
+}
+
+function wizNext(){
+  const s=S.wizard.step;
+  if(s===1){
+    const name=document.getElementById('w-site')?.value.trim();
+    const plot=document.getElementById('w-plot')?.value.trim();
+    const con=document.getElementById('w-con')?.value.trim();
+    if(!name||!plot||!con){ toast('Please fill in all required fields','error'); return; }
+    S.wizard.site={name,plotNumber:plot,kitchens:document.getElementById('w-kits')?.value,contactName:con,contactPhone:document.getElementById('w-phone')?.value.trim()};
+  }
+  if(s===2&&S.wizard.items.length===0){ toast('Please select at least one product','error'); return; }
+  if(s===3){
+    const del=document.getElementById('w-del')?.value;
+    if(!del){ toast('Please set a delivery date','error'); return; }
+    S.wizard.delivery=del;
+    S.wizard.window=document.getElementById('w-win')?.value;
+    S.wizard.notes=document.getElementById('w-notes')?.value.trim();
+  }
+  S.wizard.step++;
+  renderWiz();
+}
+
+function wizBack(){ if(S.wizard.step>1){ S.wizard.step--; renderWiz(); } }
+
+function selCat(c){ S.selCat=c; renderWiz(); }
+
+function toggleProd(id){
+  const idx=S.wizard.items.findIndex(i=>i.productId===id);
+  if(idx>=0) S.wizard.items.splice(idx,1);
+  else S.wizard.items.push({productId:id,qty:1,notes:''});
+  renderWiz();
+}
+
+function chQty(i,delta){
+  S.wizard.items[i].qty=Math.max(1,(S.wizard.items[i].qty||1)+delta);
+  renderWiz();
+}
+
+function setQty(i,val){ S.wizard.items[i].qty=Math.max(1,parseInt(val)||1); }
+
+function rmItem(i){ S.wizard.items.splice(i,1); renderWiz(); }
+
+function submitOrder(){
+  const w=S.wizard;
+  const ref=`OKO-${new Date().getFullYear()}-${String(S.orders.length+1).padStart(4,'0')}`;
+  const order={
+    id:'o'+Date.now(), reference:ref,
+    createdBy:S.user.name, role:S.user.role,
+    site:w.site.name, plotNumber:w.site.plotNumber,
+    contactName:w.site.contactName, contactPhone:w.site.contactPhone||'',
+    requestedDelivery:w.delivery, deliveryWindow:w.window||'',
+    notes:w.notes||'', items:w.items,
+    status:'submitted',
+    createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(),
+  };
+  S.orders.unshift(order);
+  lsSet(SK.orders,S.orders);
+  updateBadge();
+  toast(`${ref} submitted!`,'success');
+  go('orders');
+}
+
+// ── CATALOGUE ────────────────────────────────────────────────
+function renderCatalogue(){
+  const cats=['All',...new Set(S.products.map(p=>p.category))];
+  const cat=S.selCat;
+  const list=cat==='All'?S.products:S.products.filter(p=>p.category===cat);
+  return `
+<div class="page-header">
+  <div><div class="page-title">Product Catalogue</div><div class="page-subtitle">${S.products.length} products</div></div>
+  <button class="btn btn-primary" onclick="openPM()"><i class="fas fa-plus"></i> Add Product</button>
+</div>
+<div class="cat-tabs">${cats.map(c=>`<div class="cat-tab ${c===cat?'active':''}" onclick="selCatCat('${c}')">${c}</div>`).join('')}</div>
+<div class="card"><div class="table-wrapper"><table class="data-table">
+  <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Unit</th><th>Notes</th><th></th></tr></thead>
+  <tbody>${list.map(p=>`<tr>
+    <td><code style="font-size:12px;background:var(--gray-100);padding:2px 6px;border-radius:4px">${esc(p.sku)}</code></td>
+    <td><strong>${esc(p.name)}</strong></td>
+    <td class="text-muted text-sm">${esc(p.category)}</td>
+    <td class="text-muted text-sm">${p.unit}</td>
+    <td class="text-muted text-sm">${esc(p.notes)||'—'}</td>
+    <td><div class="d-flex gap-8"><button class="btn btn-sm btn-ghost" onclick="editPM('${p.id}')"><i class="fas fa-pen"></i></button><button class="btn btn-sm btn-ghost" onclick="confirmDelProd('${p.id}')"><i class="fas fa-trash"></i></button></div></td>
+  </tr>`).join('')}</tbody>
+</table></div></div>`;
+}
+
+function selCatCat(c){ S.selCat=c; go('catalogue'); }
+
+function openPM(){
+  S.editPid=null;
+  document.getElementById('pm-title').textContent='Add Product';
+  ['pm-sku','pm-name','pm-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pm-cat').value='Base Units';
+  document.getElementById('pm-unit').value='each';
+  document.getElementById('product-modal').classList.add('open');
+}
+
+function editPM(id){
+  const p=S.products.find(pr=>pr.id===id); if(!p) return;
+  S.editPid=id;
+  document.getElementById('pm-title').textContent='Edit Product';
+  document.getElementById('pm-sku').value=p.sku;
+  document.getElementById('pm-name').value=p.name;
+  document.getElementById('pm-cat').value=p.category;
+  document.getElementById('pm-unit').value=p.unit;
+  document.getElementById('pm-notes').value=p.notes||'';
+  document.getElementById('product-modal').classList.add('open');
+}
+
+function saveProduct(){
+  const sku=document.getElementById('pm-sku').value.trim();
+  const name=document.getElementById('pm-name').value.trim();
+  if(!sku||!name){ toast('SKU and Name required','error'); return; }
+  const prod={sku,name,category:document.getElementById('pm-cat').value,unit:document.getElementById('pm-unit').value,notes:document.getElementById('pm-notes').value.trim()};
+  if(S.editPid){
+    const idx=S.products.findIndex(p=>p.id===S.editPid);
+    if(idx>=0) S.products[idx]={...S.products[idx],...prod};
+  } else {
+    prod.id='p'+Date.now();
+    S.products.push(prod);
+  }
+  lsSet(SK.products,S.products);
+  closeModal('product-modal');
+  toast(S.editPid?'Product updated':'Product added','success');
+  go('catalogue');
+}
+
+function confirmDelProd(id){
+  const p=S.products.find(pr=>pr.id===id); if(!p) return;
+  document.getElementById('confirm-title').textContent='Delete Product';
+  document.getElementById('confirm-msg').textContent=`Delete "${p.name}" (${p.sku})?`;
+  document.getElementById('confirm-btn').onclick=()=>{ S.products=S.products.filter(pr=>pr.id!==id); lsSet(SK.products,S.products); closeModal('confirm-modal'); toast('Product deleted','success'); go('catalogue'); };
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+// ── USERS ────────────────────────────────────────────────────
+function renderUsers(){
+  const team=[
+    {name:'Sarah Mitchell',role:'admin',company:'Omega Kitchens HQ'},
+    {name:"James O'Brien",role:'site_manager',company:'Maple Gardens'},
+    {name:'Priya Sharma',role:'qs',company:'Riverside Quarter'},
+    {name:'Tom Halligan',role:'site_manager',company:'Park View Heights'},
+    {name:'Mark Davies',role:'installation_manager',company:'Omega Kitchens HQ'},
+  ];
+  return `
+<div class="page-header">
+  <div><div class="page-title">Users</div><div class="page-subtitle">Portal user accounts</div></div>
+  <button class="btn btn-primary"><i class="fas fa-user-plus"></i> Invite User</button>
+</div>
+<div class="card"><div class="table-wrapper"><table class="data-table">
+  <thead><tr><th>Name</th><th>Role</th><th>Company / Site</th><th>Status</th><th></th></tr></thead>
+  <tbody>${team.map(u=>`<tr>
+    <td><div class="d-flex align-center gap-8">
+      <div class="user-avatar" style="background:${ROLE_COLORS[u.role]};width:32px;height:32px;font-size:11px;flex-shrink:0">${u.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+      <strong>${esc(u.name)}</strong>
+    </div></td>
+    <td><span class="badge badge-submitted">${ROLES[u.role]}</span></td>
+    <td class="text-muted text-sm">${esc(u.company)}</td>
+    <td><span class="badge badge-approved">Active</span></td>
+    <td><button class="btn btn-sm btn-ghost"><i class="fas fa-ellipsis"></i></button></td>
+  </tr>`).join('')}</tbody>
+</table></div></div>`;
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function updateBadge(){
+  const n=S.orders.filter(o=>o.status==='submitted').length;
+  const b=document.getElementById('nav-badge');
+  if(b){ b.textContent=n; b.style.display=n>0?'inline':'none'; }
+}
+
+function badge(s){
+  const m={draft:'badge-draft',submitted:'badge-submitted',approved:'badge-approved','in-production':'badge-in-production',dispatched:'badge-dispatched',delivered:'badge-delivered',cancelled:'badge-cancelled'};
+  return `<span class="badge ${m[s]||'badge-draft'}">${statusLabel(s)}</span>`;
+}
+
+function statusLabel(s){
+  const m={draft:'Draft',submitted:'Submitted',approved:'Approved','in-production':'In Production',dispatched:'Dispatched',delivered:'Delivered',cancelled:'Cancelled'};
+  return m[s]||s;
+}
+
+function fmtDate(d){
+  if(!d) return '—';
+  const dt=new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function fmtDT(d){
+  if(!d) return '—';
+  return new Date(d).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function esc(s){
+  if(s==null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function emptyState(text,sub=''){
+  return `<div class="empty-state"><i class="fas fa-box-open"></i><p>${text}</p>${sub?`<span>${sub}</span>`:''}</div>`;
+}
+
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function toast(msg,type=''){
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  const icons={success:'fa-check-circle',error:'fa-exclamation-circle',warning:'fa-triangle-exclamation'};
+  t.innerHTML=`<i class="fas ${icons[type]||'fa-info-circle'}"></i> ${msg}`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(()=>t.remove(),3500);
+}
+
+document.addEventListener('click',e=>{ if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
+
+// ── BOOT ─────────────────────────────────────────────────────
+seed();
+const savedUser=ls(SK.user);
+if(savedUser){ S.user=savedUser; bootApp(); }
+
+// Kick off wizard render after navigation sets up the shell
+const _goOrig=go;
+window.go=function(view){
+  _goOrig(view);
+  if(view==='calloff') renderWiz();
+};
+</script>
+</body>
+</html>
