@@ -205,6 +205,54 @@ table.data-table tbody tr:hover{background:var(--gray-50)}
 .text-muted{color:var(--gray-400)}.text-sm{font-size:12px}.mt-4{margin-top:16px}
 .d-flex{display:flex}.gap-8{gap:8px}.align-center{align-items:center}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:99px}
+
+/* ── MOBILE ───────────────────────────────────────── */
+.hamburger{display:none;align-items:center;justify-content:center;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:8px;border-radius:6px;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.hamburger:active{background:rgba(255,255,255,.15)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:49}
+.sidebar-overlay.open{display:block}
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:62px;background:#fff;border-top:1px solid var(--gray-200);z-index:90;box-shadow:0 -2px 10px rgba(0,0,0,.07)}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--gray-400);font-size:10px;font-weight:600;padding:6px 4px;transition:color .15s;position:relative;-webkit-tap-highlight-color:transparent}
+.bn-item i{font-size:20px}
+.bn-item.active{color:var(--accent)}
+.bn-dot{position:absolute;top:8px;right:calc(50% - 16px);width:7px;height:7px;background:var(--danger);border-radius:50%;border:2px solid #fff}
+
+@media(max-width:768px){
+  .hamburger{display:flex}
+  .brand-divider,.brand-sub{display:none}
+  .user-info{display:none}
+  .sidebar{transform:translateX(-240px);transition:transform .25s ease;box-shadow:none}
+  .sidebar.open{transform:translateX(0);box-shadow:4px 0 20px rgba(0,0,0,.15)}
+  .main-content{margin-left:0;padding-bottom:72px}
+  .content-area{padding:14px}
+  .stats-grid{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .stat-card{padding:14px;gap:12px}
+  .stat-value{font-size:22px}
+  .stat-icon{width:36px;height:36px;font-size:15px;border-radius:8px}
+  .page-title{font-size:18px}
+  .page-header{margin-bottom:14px}
+  .wizard-step-label{display:none}
+  .wizard-connector{width:16px;margin:0 2px}
+  .wizard-steps{padding:12px 14px;justify-content:center;gap:0}
+  .product-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .product-card{padding:10px}
+  .product-name{font-size:12px}
+  .qty-row{grid-template-columns:1fr auto auto;gap:8px;padding:10px 12px}
+  .auth-card{padding:28px 20px}
+  .modal-overlay{align-items:flex-end;padding:0}
+  .modal{border-radius:var(--radius-lg) var(--radius-lg) 0 0!important;max-width:100%!important;max-height:88vh;width:100%}
+  .bottom-nav{display:flex}
+  .filters-bar{flex-direction:column;align-items:stretch;gap:8px}
+  .search-wrap{min-width:0}
+  #stat-filter{width:100%!important}
+  .cat-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .cat-tabs::-webkit-scrollbar{height:0}
+  .cat-tab{flex-shrink:0;padding:7px 12px}
+  #toast-container{bottom:76px;right:12px;left:12px}
+  .toast{max-width:100%}
+  .hide-mob{display:none}
+  .form-grid-2,[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+}
     </style>
 </head>
 <body>
@@ -236,6 +284,7 @@ table.data-table tbody tr:hover{background:var(--gray-50)}
 <!-- ── APP ── -->
 <div id="app">
   <div class="top-bar">
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu"><i class="fas fa-bars"></i></button>
     <div class="top-bar-brand">
       <div class="brand-icon"><i class="fas fa-utensils"></i></div>
       <span class="brand-name">Omega Kitchens</span>
@@ -249,6 +298,7 @@ table.data-table tbody tr:hover{background:var(--gray-50)}
     </div>
   </div>
 
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
   <div class="sidebar" id="sidebar">
     <div class="nav-section-label">Main</div>
     <div class="nav-item active" id="nav-dashboard" onclick="go('dashboard')"><i class="fas fa-gauge-high"></i> Dashboard</div>
@@ -266,6 +316,15 @@ table.data-table tbody tr:hover{background:var(--gray-50)}
   <div class="main-content">
     <div class="content-area" id="content"></div>
   </div>
+
+  <!-- Bottom nav (mobile) -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <div class="bn-item active" id="bn-dashboard" onclick="go('dashboard')"><i class="fas fa-gauge-high"></i><span>Home</span></div>
+    <div class="bn-item" id="bn-calloff" onclick="go('calloff')"><i class="fas fa-plus-circle"></i><span>New</span></div>
+    <div class="bn-item" id="bn-orders" onclick="go('orders')"><i class="fas fa-list-check"></i><span>Orders</span><span class="bn-dot" id="bn-dot" style="display:none"></span></div>
+    <div class="bn-item" id="bn-catalogue" style="display:none" onclick="go('catalogue')"><i class="fas fa-boxes-stacked"></i><span>Catalogue</span></div>
+    <div class="bn-item" id="bn-users" style="display:none" onclick="go('users')"><i class="fas fa-users"></i><span>Users</span></div>
+  </nav>
 </div>
 
 <!-- ORDER DETAIL MODAL -->
@@ -432,6 +491,8 @@ function bootApp(){
     document.getElementById('admin-nav-label').style.display='block';
     document.getElementById('nav-catalogue').style.display='flex';
     document.getElementById('nav-users').style.display='flex';
+    document.getElementById('bn-catalogue').style.display='flex';
+    document.getElementById('bn-users').style.display='flex';
   }
   updateBadge();
   go('dashboard');
@@ -442,6 +503,11 @@ function go(view){
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   const nav = document.getElementById('nav-'+view)||document.getElementById('nav-dashboard');
   if(nav) nav.classList.add('active');
+  // sync bottom nav
+  document.querySelectorAll('.bn-item').forEach(el=>el.classList.remove('active'));
+  const bn = document.getElementById('bn-'+view);
+  if(bn) bn.classList.add('active');
+  closeSidebar();
   S.view = view;
   const el = document.getElementById('content');
   switch(view){
@@ -501,7 +567,7 @@ function renderOrders(){
   </select>
 </div>
 <div class="card"><div class="table-wrapper">
-  <table class="data-table"><thead><tr><th>Reference</th><th>Site</th><th>Plot/Unit</th><th>Items</th><th>Created By</th><th>Delivery</th><th>Status</th><th></th></tr></thead>
+  <table class="data-table"><thead><tr><th>Reference</th><th>Site</th><th class="hide-mob">Plot/Unit</th><th class="hide-mob">Items</th><th class="hide-mob">Created By</th><th>Delivery</th><th>Status</th><th></th></tr></thead>
   <tbody id="orders-body">${ordersRows(S.orders)}</tbody></table>
 </div></div>`;
 }
@@ -510,10 +576,10 @@ function ordersRows(list){
   if(!list.length) return `<tr><td colspan="8">${emptyState('No orders found')}</td></tr>`;
   return list.map(o=>`<tr>
     <td><span class="order-ref">${esc(o.reference)}</span></td>
-    <td><strong>${esc(o.site)}</strong></td>
-    <td class="text-muted text-sm">${esc(o.plotNumber)}</td>
-    <td class="text-muted">${o.items.length}</td>
-    <td>${esc(o.createdBy)}</td>
+    <td><strong>${esc(o.site)}</strong><div class="text-muted text-sm hide-mob" style="display:none">${esc(o.plotNumber)}</div></td>
+    <td class="text-muted text-sm hide-mob">${esc(o.plotNumber)}</td>
+    <td class="text-muted hide-mob">${o.items.length}</td>
+    <td class="hide-mob">${esc(o.createdBy)}</td>
     <td>${fmtDate(o.requestedDelivery)}</td>
     <td>${badge(o.status)}</td>
     <td><div class="d-flex gap-8 align-center">
@@ -942,6 +1008,8 @@ function updateBadge(){
   const n=S.orders.filter(o=>o.status==='submitted').length;
   const b=document.getElementById('nav-badge');
   if(b){ b.textContent=n; b.style.display=n>0?'inline':'none'; }
+  const dot=document.getElementById('bn-dot');
+  if(dot) dot.style.display=n>0?'block':'none';
 }
 
 function badge(s){
@@ -975,6 +1043,15 @@ function emptyState(text,sub=''){
 }
 
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
 
 function toast(msg,type=''){
   const t=document.createElement('div');
